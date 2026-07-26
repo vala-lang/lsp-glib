@@ -34,7 +34,9 @@ private class TestServer : Lsp.Server {
     }
 
     public int event_count {
-        get { return events.length; }
+        get {
+            return events.length;
+        }
     }
 
     public unowned string event_at (int index) {

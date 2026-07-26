@@ -80,24 +80,24 @@ namespace Lsp {
 
         public unowned string to_string () {
             switch (this) {
-            case EMPTY:
-                return "";
-            case QUICK_FIX:
-                return "quickfix";
-            case REFACTOR:
-                return "refactor";
-            case REFACTOR_EXTRACT:
-                return "refactor.extract";
-            case REFACTOR_INLINE:
-                return "refactor.inline";
-            case REFACTOR_REWRITE:
-                return "refactor.rewrite";
-            case SOURCE:
-                return "source";
-            case SOURCE_ORGANIZE_IMPORTS:
-                return "source.organizeImports";
-            case SOURCE_FIX_ALL:
-                return "source.fixAll";
+                case EMPTY:
+                    return "";
+                case QUICK_FIX:
+                    return "quickfix";
+                case REFACTOR:
+                    return "refactor";
+                case REFACTOR_EXTRACT:
+                    return "refactor.extract";
+                case REFACTOR_INLINE:
+                    return "refactor.inline";
+                case REFACTOR_REWRITE:
+                    return "refactor.rewrite";
+                case SOURCE:
+                    return "source";
+                case SOURCE_ORGANIZE_IMPORTS:
+                    return "source.organizeImports";
+                case SOURCE_FIX_ALL:
+                    return "source.fixAll";
             }
 
             assert_not_reached ();
@@ -107,7 +107,7 @@ namespace Lsp {
             if (!variant.is_of_type (VariantType.STRING))
                 throw new DeserializeError.INVALID_TYPE ("expected string for CodeActionKind");
 
-            switch ((string)variant) {
+            switch ((string) variant) {
                 case "quickfix":
                     return QUICK_FIX;
                 case "refactor":
@@ -154,15 +154,17 @@ namespace Lsp {
          */
         AUTOMATIC = 2;
 
-        public static CodeActionTriggerKind parse_variant (Variant variant) throws DeserializeError {
+        public static CodeActionTriggerKind parse_variant (
+            Variant variant) throws DeserializeError {
             if (!variant.is_of_type (VariantType.INT64))
-                throw new DeserializeError.INVALID_TYPE ("expected int64 for CodeActionTriggerKind");
+                throw new DeserializeError.INVALID_TYPE (
+                    "expected int64 for CodeActionTriggerKind");
             switch ((int64) variant) {
-            case INVOKED:
-            case AUTOMATIC:
-                return (CodeActionTriggerKind) (int64) variant;
-            default:
-                throw new DeserializeError.INVALID_TYPE ("expected CodeActionTriggerKind");
+                case INVOKED:
+                case AUTOMATIC:
+                    return (CodeActionTriggerKind) (int64) variant;
+                default:
+                    throw new DeserializeError.INVALID_TYPE ("expected CodeActionTriggerKind");
             }
         }
     }
@@ -172,7 +174,8 @@ namespace Lsp {
      * a code action is run.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_code_action_context_ref", unref_function = "lsp_code_action_context_unref")]
+    [CCode (ref_function = "lsp_code_action_context_ref",
+        unref_function = "lsp_code_action_context_unref")]
     public class CodeActionContext {
         private int ref_count = 1;
 
@@ -218,7 +221,8 @@ namespace Lsp {
          */
         public CodeActionContext.from_variant (Variant variant) throws Error {
             Diagnostic[] diagnostics = {};
-            foreach (var diag in expect_property (variant, "diagnostics", VariantType.ARRAY, "CodeActionContext")) {
+            foreach (var diag in expect_property (variant, "diagnostics", VariantType.ARRAY,
+                "CodeActionContext")) {
                 diagnostics += new Diagnostic.from_variant (
                     expect_array_element (
                         diag,
@@ -227,7 +231,8 @@ namespace Lsp {
             }
             this.diagnostics = diagnostics;
 
-            Variant ? only_variant = lookup_property (variant, "only", VariantType.ARRAY, "CodeActionContext");
+            Variant? only_variant = lookup_property (variant, "only", VariantType.ARRAY,
+                "CodeActionContext");
             if (only_variant != null) {
                 CodeActionKind[] only = {};
                 foreach (var kind in only_variant)
@@ -239,7 +244,8 @@ namespace Lsp {
                 this.only = only;
             }
 
-            Variant ? trigger_variant = lookup_property (variant, "triggerKind", VariantType.INT64, "CodeActionContext");
+            Variant? trigger_variant = lookup_property (variant, "triggerKind", VariantType.INT64,
+                "CodeActionContext");
             if (trigger_variant != null)
                 trigger = CodeActionTriggerKind.parse_variant (trigger_variant);
         }
@@ -409,12 +415,14 @@ namespace Lsp {
                 this.diagnostics = diagnostics;
             }
 
-            if ((prop = lookup_property (variant, "edit", VariantType.VARDICT, "LspCodeAction")) != null)
+            if ((prop = lookup_property (variant, "edit", VariantType.VARDICT,
+                "LspCodeAction")) != null)
                 edit = new WorkspaceEdit.from_variant (prop);
-            
-            if ((prop = lookup_property (variant, "command", VariantType.VARDICT, "LspCodeAction")) != null)
+
+            if ((prop = lookup_property (variant, "command", VariantType.VARDICT,
+                "LspCodeAction")) != null)
                 command = new Command.from_variant (prop);
-            
+
             data = variant.lookup_value ("data", null);
         }
 

@@ -86,7 +86,8 @@ namespace Lsp {
 
         public Command.from_variant (Variant variant) throws DeserializeError {
             base ((string) expect_property (variant, "title", VariantType.STRING, "LspCommand"));
-            this.command = (string) expect_property (variant, "command", VariantType.STRING, "LspCommand");
+            this.command = (string) expect_property (variant, "command", VariantType.STRING,
+                "LspCommand");
             Variant? prop = lookup_property (variant, "arguments", VariantType.ARRAY, "LspCommand");
             if (prop != null) {
                 Variant[] arguments = {};

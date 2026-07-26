@@ -22,7 +22,7 @@ namespace Lsp {
     /**
      * Position in a text document expressed as zero-based line and zero-based
      * character offset.
-     * 
+     *
      * A position is between two characters like an ‘insert’ cursor in a
      * editor. Special values like for example `-1` to denote the end of a line
      * are not supported.
@@ -54,12 +54,14 @@ namespace Lsp {
 
             var prop = variant.lookup_value ("line", null);
             if (prop == null)
-                throw new DeserializeError.MISSING_PROPERTY ("property `line` not found for Position");
+                throw new DeserializeError.MISSING_PROPERTY (
+                    "property `line` not found for Position");
             line = parse_uinteger ((!) prop, "line", "Position");
 
             prop = variant.lookup_value ("character", null);
             if (prop == null)
-                throw new DeserializeError.MISSING_PROPERTY ("property `character` not found for Position");
+                throw new DeserializeError.MISSING_PROPERTY (
+                    "property `character` not found for Position");
             character = parse_uinteger (
                 (!) prop,
                 "character",
@@ -102,12 +104,13 @@ namespace Lsp {
         public Range.from_variant (Variant variant) throws DeserializeError {
             var start = variant.lookup_value ("start", VariantType.VARDICT);
             if (start != null)
-                this.start = Position.from_variant ((!)start);
+                this.start = Position.from_variant ((!) start);
             else
-                throw new DeserializeError.MISSING_PROPERTY ("property `start` not found for Range");
+                throw new DeserializeError.MISSING_PROPERTY (
+                    "property `start` not found for Range");
             var end = variant.lookup_value ("end", VariantType.VARDICT);
             if (end != null)
-                this.end = Position.from_variant ((!)end);
+                this.end = Position.from_variant ((!) end);
             else
                 throw new DeserializeError.MISSING_PROPERTY ("property `end` not found for Range");
         }

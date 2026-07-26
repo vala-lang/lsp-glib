@@ -1,5 +1,10 @@
 #include "test-server.h"
 
+/*
+ * TestServer records the arguments delivered to each LSP vfunc. Its tasks
+ * complete from idle callbacks so the tests cross a real async boundary.
+ */
+
 G_DEFINE_TYPE (TestServer, test_server, LSP_TYPE_SERVER)
 
 static void

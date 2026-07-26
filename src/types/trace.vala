@@ -30,6 +30,7 @@ public enum Lsp.TraceValue {
             case "verbose":
                 return VERBOSE;
         }
-        throw new DeserializeError.INVALID_TYPE ("%s is not a %s", value, typeof (TraceValue).name ());
+        throw new DeserializeError.INVALID_TYPE ("%s is not a %s", value,
+            typeof (TraceValue).name ());
     }
 }

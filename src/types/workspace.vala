@@ -20,7 +20,8 @@
 
 namespace Lsp {
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_workspace_folder_ref", unref_function = "lsp_workspace_folder_unref")]
+    [CCode (ref_function = "lsp_workspace_folder_ref",
+        unref_function = "lsp_workspace_folder_unref")]
     public class WorkspaceFolder {
         private int ref_count = 1;
 

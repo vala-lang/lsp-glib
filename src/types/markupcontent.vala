@@ -69,7 +69,7 @@ namespace Lsp {
      * ''Please Note'' that clients might sanitize the return markdown. A client could
      * decide to remove HTML from the markdown to avoid script execution.
      */
-    [Compact (opaque=true)]
+    [Compact (opaque = true)]
     [CCode (ref_function = "lsp_markup_content_ref", unref_function = "lsp_markup_content_unref")]
     public class MarkupContent {
         private int ref_count = 1;
@@ -124,7 +124,8 @@ namespace Lsp {
                     VariantType.STRING,
                     "MarkupContent");
             } else {
-                throw new DeserializeError.INVALID_TYPE ("MarkupContent must be a string or a dict");
+                throw new DeserializeError.INVALID_TYPE (
+                    "MarkupContent must be a string or a dict");
             }
         }
 

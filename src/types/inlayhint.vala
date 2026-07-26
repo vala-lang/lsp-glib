@@ -35,7 +35,8 @@ namespace Lsp {
      * @since 3.17.0
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_inlay_hint_label_part_ref", unref_function = "lsp_inlay_hint_label_part_unref")]
+    [CCode (ref_function = "lsp_inlay_hint_label_part_ref",
+        unref_function = "lsp_inlay_hint_label_part_unref")]
     public class InlayHintLabelPart {
         private int ref_count = 1;
 
@@ -78,16 +79,20 @@ namespace Lsp {
         public InlayHintLabelPart.from_variant (Variant dict) throws DeserializeError, UriError {
             Variant? prop = null;
 
-            value = (string) expect_property (dict, "value", VariantType.STRING, "InlayHintLabelPart");
+            value = (string) expect_property (dict, "value", VariantType.STRING,
+                "InlayHintLabelPart");
 
-            if ((prop = lookup_property (dict, "tooltip", VariantType.ANY, "InlayHintLabelPart")) != null)
+            if ((prop = lookup_property (dict, "tooltip", VariantType.ANY,
+                "InlayHintLabelPart")) != null)
                 tooltip = new MarkupContent.from_variant (
                     unwrap_variant (prop));
 
-            if ((prop = lookup_property (dict, "location", VariantType.VARDICT, "InlayHintLabelPart")) != null)
+            if ((prop = lookup_property (dict, "location", VariantType.VARDICT,
+                "InlayHintLabelPart")) != null)
                 location = Location.from_variant (prop);
 
-            if ((prop = lookup_property (dict, "command", VariantType.VARDICT, "InlayHintLabelPart")) != null)
+            if ((prop = lookup_property (dict, "command", VariantType.VARDICT,
+                "InlayHintLabelPart")) != null)
                 command = new Command.from_variant (prop);
         }
 
@@ -151,7 +156,9 @@ namespace Lsp {
          */
         private string? _label;
         public string? label {
-            get { return _label; }
+            get {
+                return _label;
+            }
             set {
                 _label = value;
                 if (value != null)
@@ -166,7 +173,9 @@ namespace Lsp {
          */
         private InlayHintLabelPart[]? _label_parts;
         public InlayHintLabelPart[]? label_parts {
-            get { return _label_parts; }
+            get {
+                return _label_parts;
+            }
             set {
                 _label_parts = value;
                 if (value != null)
@@ -229,7 +238,8 @@ namespace Lsp {
         public InlayHint.from_variant (Variant dict) throws DeserializeError, UriError {
             Variant? prop = null;
 
-            position = Position.from_variant (expect_property (dict, "position", VariantType.VARDICT, "InlayHint"));
+            position = Position.from_variant (expect_property (dict, "position",
+                VariantType.VARDICT, "InlayHint"));
             var label_value = unwrap_variant (
                 expect_property (dict, "label", VariantType.ANY, "InlayHint"));
             if (label_value.is_of_type (VariantType.STRING))
@@ -250,7 +260,8 @@ namespace Lsp {
             if ((prop = lookup_property (dict, "kind", VariantType.INT64, "InlayHint")) != null)
                 kind = (InlayHintKind) (int64) prop;
 
-            if ((prop = lookup_property (dict, "textEdits", VariantType.ARRAY, "InlayHint")) != null) {
+            if ((prop = lookup_property (dict, "textEdits", VariantType.ARRAY,
+                "InlayHint")) != null) {
                 TextEdit[] edits = {};
                 foreach (var edit in prop)
                     edits += TextEdit.from_variant (
@@ -265,10 +276,12 @@ namespace Lsp {
                 tooltip = new MarkupContent.from_variant (
                     unwrap_variant (prop));
 
-            if ((prop = lookup_property (dict, "paddingLeft", VariantType.BOOLEAN, "InlayHint")) != null && (bool)prop)
+            if ((prop = lookup_property (dict, "paddingLeft", VariantType.BOOLEAN,
+                "InlayHint")) != null && (bool) prop)
                 padding |= InlayHintPadding.LEFT;
 
-            if ((prop = lookup_property (dict, "paddingRight", VariantType.BOOLEAN, "InlayHint")) != null && (bool)prop)
+            if ((prop = lookup_property (dict, "paddingRight", VariantType.BOOLEAN,
+                "InlayHint")) != null && (bool) prop)
                 padding |= InlayHintPadding.RIGHT;
 
             if ((prop = dict.lookup_value ("data", null)) != null)
@@ -331,8 +344,10 @@ namespace Lsp {
         }
 
         public InlayHintParams.from_variant (Variant dict) throws DeserializeError, UriError {
-            text_document = TextDocumentIdentifier.from_variant (expect_property (dict, "textDocument", VariantType.VARDICT, "InlayHintParams"));
-            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT, "InlayHintParams"));
+            text_document = TextDocumentIdentifier.from_variant (expect_property (dict,
+                "textDocument", VariantType.VARDICT, "InlayHintParams"));
+            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT,
+                "InlayHintParams"));
         }
 
         public Variant to_variant () {
@@ -349,7 +364,8 @@ namespace Lsp {
      * @since 3.17.0
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_inlay_hint_options_ref", unref_function = "lsp_inlay_hint_options_unref")]
+    [CCode (ref_function = "lsp_inlay_hint_options_ref",
+        unref_function = "lsp_inlay_hint_options_unref")]
     public class InlayHintOptions {
         private int ref_count = 1;
 
@@ -376,7 +392,8 @@ namespace Lsp {
         }
 
         public InlayHintOptions.from_variant (Variant variant) throws DeserializeError {
-            Variant? prop = lookup_property (variant, "resolveProvider", VariantType.BOOLEAN, "InlayHintOptions");
+            Variant? prop = lookup_property (variant, "resolveProvider", VariantType.BOOLEAN,
+                "InlayHintOptions");
             if (prop != null)
                 resolve_provider = (bool) prop;
         }

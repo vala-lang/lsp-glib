@@ -1,5 +1,11 @@
 #include "lsp-glib.h"
 
+/*
+ * These small round trips cover both stack-allocated structs and ref-counted
+ * protocol objects. The markup test builds its wire value by hand so decoding
+ * is tested independently of the matching encoder.
+ */
+
 static void
 test_position_and_range_round_trip (void)
 {
@@ -73,6 +79,7 @@ test_markup_content_deserialization (void)
   g_autoptr (GVariant) encoded = NULL;
   g_autoptr (LspMarkupContent) content = NULL;
 
+  /* Deliberately bypass lsp_markup_content_to_variant() in this test. */
   g_variant_builder_init (&builder, G_VARIANT_TYPE_VARDICT);
   g_variant_builder_add (
       &builder,

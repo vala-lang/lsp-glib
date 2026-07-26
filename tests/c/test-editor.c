@@ -1,5 +1,10 @@
 #include "test-editor.h"
 
+/*
+ * TestEditor records client-facing notifications and provides predictable
+ * replies to requests. Idle completion keeps the mock behavior asynchronous.
+ */
+
 G_DEFINE_TYPE (TestEditor, test_editor, LSP_TYPE_EDITOR)
 
 typedef struct

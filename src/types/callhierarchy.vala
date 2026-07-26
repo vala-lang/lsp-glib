@@ -23,7 +23,8 @@ namespace Lsp {
      * Represents an item in a call hierarchy.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_call_hierarchy_item_ref", unref_function = "lsp_call_hierarchy_item_unref")]
+    [CCode (ref_function = "lsp_call_hierarchy_item_ref",
+        unref_function = "lsp_call_hierarchy_item_unref")]
     public class CallHierarchyItem {
         private int ref_count = 1;
 
@@ -82,7 +83,9 @@ namespace Lsp {
          */
         public Variant? data { get; set; }
 
-        public CallHierarchyItem (string name, SymbolKind kind, Uri uri, Range range, Range selection_range, string? detail = null, SymbolTag tags = SymbolTag.UNSET) {
+        public CallHierarchyItem (string name, SymbolKind kind, Uri uri, Range range,
+                                  Range selection_range, string? detail = null,
+                                  SymbolTag tags = SymbolTag.UNSET) {
             this.name = name;
             this.kind = kind;
             this.uri = uri;
@@ -96,9 +99,11 @@ namespace Lsp {
             Variant? prop = null;
 
             name = (string) expect_property (dict, "name", VariantType.STRING, "CallHierarchyItem");
-            kind = (SymbolKind) (int64) expect_property (dict, "kind", VariantType.INT64, "CallHierarchyItem");
+            kind = (SymbolKind) (int64) expect_property (dict, "kind", VariantType.INT64,
+                "CallHierarchyItem");
 
-            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY, "CallHierarchyItem")) != null) {
+            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY,
+                "CallHierarchyItem")) != null) {
                 SymbolTag parsed_tags = SymbolTag.UNSET;
                 foreach (var tag_v in prop) {
                     var tag = expect_array_element (
@@ -110,12 +115,16 @@ namespace Lsp {
                 tags = parsed_tags;
             }
 
-            if ((prop = lookup_property (dict, "detail", VariantType.STRING, "CallHierarchyItem")) != null)
+            if ((prop = lookup_property (dict, "detail", VariantType.STRING,
+                "CallHierarchyItem")) != null)
                 detail = (string) prop;
 
-            uri = Uri.parse ((string) expect_property (dict, "uri", VariantType.STRING, "CallHierarchyItem"), UriFlags.NONE);
-            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT, "CallHierarchyItem"));
-            selection_range = Range.from_variant (expect_property (dict, "selectionRange", VariantType.VARDICT, "CallHierarchyItem"));
+            uri = Uri.parse ((string) expect_property (dict, "uri", VariantType.STRING,
+                "CallHierarchyItem"), UriFlags.NONE);
+            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT,
+                "CallHierarchyItem"));
+            selection_range = Range.from_variant (expect_property (dict, "selectionRange",
+                VariantType.VARDICT, "CallHierarchyItem"));
 
             if ((prop = dict.lookup_value ("data", null)) != null)
                 data = prop;
@@ -146,7 +155,8 @@ namespace Lsp {
      * Represents an incoming call from a call hierarchy.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_call_hierarchy_incoming_call_ref", unref_function = "lsp_call_hierarchy_incoming_call_unref")]
+    [CCode (ref_function = "lsp_call_hierarchy_incoming_call_ref",
+        unref_function = "lsp_call_hierarchy_incoming_call_unref")]
     public class CallHierarchyIncomingCall {
         private int ref_count = 1;
 
@@ -177,10 +187,13 @@ namespace Lsp {
             this.from_ranges = from_ranges;
         }
 
-        public CallHierarchyIncomingCall.from_variant (Variant dict) throws DeserializeError, UriError {
-            from = new CallHierarchyItem.from_variant (expect_property (dict, "from", VariantType.VARDICT, "CallHierarchyIncomingCall"));
+        public CallHierarchyIncomingCall.from_variant (Variant dict) throws DeserializeError,
+        UriError {
+            from = new CallHierarchyItem.from_variant (expect_property (dict, "from",
+                VariantType.VARDICT, "CallHierarchyIncomingCall"));
             Range[] ranges = {};
-            foreach (var rng in expect_property (dict, "fromRanges", VariantType.ARRAY, "CallHierarchyIncomingCall"))
+            foreach (var rng in expect_property (dict, "fromRanges", VariantType.ARRAY,
+                "CallHierarchyIncomingCall"))
                 ranges += Range.from_variant (expect_array_element (
                     rng,
                     VariantType.VARDICT,
@@ -203,7 +216,8 @@ namespace Lsp {
      * Represents an outgoing call from a call hierarchy.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_call_hierarchy_outgoing_call_ref", unref_function = "lsp_call_hierarchy_outgoing_call_unref")]
+    [CCode (ref_function = "lsp_call_hierarchy_outgoing_call_ref",
+        unref_function = "lsp_call_hierarchy_outgoing_call_unref")]
     public class CallHierarchyOutgoingCall {
         private int ref_count = 1;
 
@@ -234,10 +248,13 @@ namespace Lsp {
             this.from_ranges = from_ranges;
         }
 
-        public CallHierarchyOutgoingCall.from_variant (Variant dict) throws DeserializeError, UriError {
-            to = new CallHierarchyItem.from_variant (expect_property (dict, "to", VariantType.VARDICT, "CallHierarchyOutgoingCall"));
+        public CallHierarchyOutgoingCall.from_variant (Variant dict) throws DeserializeError,
+        UriError {
+            to = new CallHierarchyItem.from_variant (expect_property (dict, "to",
+                VariantType.VARDICT, "CallHierarchyOutgoingCall"));
             Range[] ranges = {};
-            foreach (var rng in expect_property (dict, "fromRanges", VariantType.ARRAY, "CallHierarchyOutgoingCall"))
+            foreach (var rng in expect_property (dict, "fromRanges", VariantType.ARRAY,
+                "CallHierarchyOutgoingCall"))
                 ranges += Range.from_variant (expect_array_element (
                     rng,
                     VariantType.VARDICT,
@@ -260,7 +277,8 @@ namespace Lsp {
      * Options for call hierarchy support.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_call_hierarchy_options_ref", unref_function = "lsp_call_hierarchy_options_unref")]
+    [CCode (ref_function = "lsp_call_hierarchy_options_ref",
+        unref_function = "lsp_call_hierarchy_options_unref")]
     public class CallHierarchyOptions {
         private int ref_count = 1;
 

@@ -140,7 +140,8 @@ namespace Lsp {
      * @since 3.2.0
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_completion_context_ref", unref_function = "lsp_completion_context_unref")]
+    [CCode (ref_function = "lsp_completion_context_ref",
+        unref_function = "lsp_completion_context_unref")]
     public class CompletionContext {
         private int ref_count = 1;
 
@@ -168,15 +169,18 @@ namespace Lsp {
          */
         public string? trigger_character { get; set; }
 
-        public CompletionContext (CompletionTriggerKind trigger_kind, string? trigger_character = null) {
+        public CompletionContext (CompletionTriggerKind trigger_kind,
+                                  string? trigger_character = null) {
             this.trigger_kind = trigger_kind;
             this.trigger_character = trigger_character;
         }
 
         public CompletionContext.from_variant (Variant dict) throws DeserializeError {
-            var kind = expect_property (dict, "triggerKind", VariantType.INT64, "CompletionContext");
+            var kind = expect_property (dict, "triggerKind", VariantType.INT64,
+                "CompletionContext");
             trigger_kind = (CompletionTriggerKind) (int64) kind;
-            var prop = lookup_property (dict, "triggerCharacter", VariantType.STRING, "CompletionContext");
+            var prop = lookup_property (dict, "triggerCharacter", VariantType.STRING,
+                "CompletionContext");
             if (prop != null)
                 trigger_character = (string) prop;
         }
@@ -196,7 +200,8 @@ namespace Lsp {
      * @since 3.17.0
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_completion_item_label_details_ref", unref_function = "lsp_completion_item_label_details_unref")]
+    [CCode (ref_function = "lsp_completion_item_label_details_ref",
+        unref_function = "lsp_completion_item_label_details_unref")]
     public class CompletionItemLabelDetails {
         private int ref_count = 1;
 
@@ -233,9 +238,11 @@ namespace Lsp {
 
         public CompletionItemLabelDetails.from_variant (Variant dict) throws DeserializeError {
             Variant? prop = null;
-            if ((prop = lookup_property (dict, "detail", VariantType.STRING, "CompletionItemLabelDetails")) != null)
+            if ((prop = lookup_property (dict, "detail", VariantType.STRING,
+                "CompletionItemLabelDetails")) != null)
                 detail = (string) prop;
-            if ((prop = lookup_property (dict, "description", VariantType.STRING, "CompletionItemLabelDetails")) != null)
+            if ((prop = lookup_property (dict, "description", VariantType.STRING,
+                "CompletionItemLabelDetails")) != null)
                 description = (string) prop;
         }
 
@@ -292,7 +299,8 @@ namespace Lsp {
         }
 
         public CompletionList.from_variant (Variant dict) throws DeserializeError {
-            is_incomplete = (bool) expect_property (dict, "isIncomplete", VariantType.BOOLEAN, "CompletionList");
+            is_incomplete = (bool) expect_property (dict, "isIncomplete", VariantType.BOOLEAN,
+                "CompletionList");
             CompletionItem[] items = {};
             var items_v = expect_property (dict, "items", VariantType.ARRAY, "CompletionList");
             foreach (var item_v in items_v)
@@ -512,13 +520,16 @@ namespace Lsp {
 
             label = (string) expect_property (dict, "label", VariantType.STRING, "CompletionItem");
 
-            if ((prop = lookup_property (dict, "labelDetails", VariantType.VARDICT, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "labelDetails", VariantType.VARDICT,
+                "CompletionItem")) != null)
                 label_details = new CompletionItemLabelDetails.from_variant (prop);
 
-            if ((prop = lookup_property (dict, "kind", VariantType.INT64, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "kind", VariantType.INT64,
+                "CompletionItem")) != null)
                 kind = (CompletionItemKind) (int64) prop;
 
-            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY, "CompletionItem")) != null) {
+            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY,
+                "CompletionItem")) != null) {
                 CompletionItemTag parsed_tags = NONE;
                 foreach (var tag_v in prop) {
                     var tag = expect_array_element (
@@ -531,37 +542,47 @@ namespace Lsp {
                 tags = parsed_tags;
             }
 
-            if ((prop = lookup_property (dict, "detail", VariantType.STRING, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "detail", VariantType.STRING,
+                "CompletionItem")) != null)
                 detail = (string) prop;
 
-            if ((prop = lookup_property (dict, "documentation", VariantType.ANY, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "documentation", VariantType.ANY,
+                "CompletionItem")) != null)
                 documentation = new MarkupContent.from_variant (
                     unwrap_variant (prop));
 
-            if ((prop = lookup_property (dict, "preselect", VariantType.BOOLEAN, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "preselect", VariantType.BOOLEAN,
+                "CompletionItem")) != null)
                 preselect = (bool) prop;
 
-            if ((prop = lookup_property (dict, "sortText", VariantType.STRING, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "sortText", VariantType.STRING,
+                "CompletionItem")) != null)
                 sort_text = (string) prop;
 
-            if ((prop = lookup_property (dict, "filterText", VariantType.STRING, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "filterText", VariantType.STRING,
+                "CompletionItem")) != null)
                 filter_text = (string) prop;
 
-            if ((prop = lookup_property (dict, "insertText", VariantType.STRING, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "insertText", VariantType.STRING,
+                "CompletionItem")) != null)
                 insert_text = (string) prop;
 
-            if ((prop = lookup_property (dict, "insertTextFormat", VariantType.INT64, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "insertTextFormat", VariantType.INT64,
+                "CompletionItem")) != null)
                 insert_text_format = (InsertTextFormat) (int64) prop;
 
-            if ((prop = lookup_property (dict, "insertTextMode", VariantType.INT64, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "insertTextMode", VariantType.INT64,
+                "CompletionItem")) != null)
                 insert_text_mode = (InsertTextMode) (int64) prop;
 
-            if ((prop = lookup_property (dict, "textEdit", VariantType.VARDICT, "CompletionItem")) != null) {
+            if ((prop = lookup_property (dict, "textEdit", VariantType.VARDICT,
+                "CompletionItem")) != null) {
                 if (prop.lookup_value ("range", null) != null)
                     text_edit = TextEdit.from_variant (prop);
             }
 
-            if ((prop = lookup_property (dict, "additionalTextEdits", VariantType.ARRAY, "CompletionItem")) != null) {
+            if ((prop = lookup_property (dict, "additionalTextEdits", VariantType.ARRAY,
+                "CompletionItem")) != null) {
                 TextEdit[] edits = {};
                 foreach (var edit_v in prop)
                     edits += TextEdit.from_variant (
@@ -573,12 +594,14 @@ namespace Lsp {
                     additional_text_edits = edits;
             }
 
-            if ((prop = lookup_property (dict, "commitCharacters", VariantType.ARRAY, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "commitCharacters", VariantType.ARRAY,
+                "CompletionItem")) != null)
                 commit_chars = string_array_from_variant (
                     prop,
                     "CompletionItem.commitCharacters");
 
-            if ((prop = lookup_property (dict, "command", VariantType.VARDICT, "CompletionItem")) != null)
+            if ((prop = lookup_property (dict, "command", VariantType.VARDICT,
+                "CompletionItem")) != null)
                 command = new Command.from_variant (prop);
 
             if ((prop = dict.lookup_value ("data", null)) != null)
@@ -636,7 +659,8 @@ namespace Lsp {
                 Variant[] edits = {};
                 foreach (unowned var edit in additional_text_edits)
                     edits += edit.to_variant ();
-                dict.insert_value ("additionalTextEdits", new Variant.array (VariantType.VARDICT, edits));
+                dict.insert_value ("additionalTextEdits",
+                    new Variant.array (VariantType.VARDICT, edits));
             }
 
             if (commit_chars != null)

@@ -71,8 +71,10 @@ namespace Lsp {
          * Deserialize this from a {@link GLib.Variant}
          */
         public TextEdit.from_variant (Variant variant) throws DeserializeError {
-            range = Range.from_variant (expect_property (variant, "range", VariantType.VARDICT, "LspTextEdit"));
-            new_text = (string) expect_property (variant, "newText", VariantType.STRING, "LspTextEdit");
+            range = Range.from_variant (expect_property (variant, "range", VariantType.VARDICT,
+                "LspTextEdit"));
+            new_text = (string) expect_property (variant, "newText", VariantType.STRING,
+                "LspTextEdit");
             var prop = lookup_property (variant, "annotationId", VariantType.STRING, "LspTextEdit");
             if (prop != null)
                 annotation_id = (string) prop;
@@ -99,7 +101,8 @@ namespace Lsp {
      * @since 3.16.0
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_change_annotation_ref", unref_function = "lsp_change_annotation_unref")]
+    [CCode (ref_function = "lsp_change_annotation_ref",
+        unref_function = "lsp_change_annotation_unref")]
     public class ChangeAnnotation {
         private int ref_count = 1;
 
@@ -138,7 +141,8 @@ namespace Lsp {
          *
          * {@inheritDoc}
          */
-        public ChangeAnnotation (string label, bool needs_confirmation = false, string? description = null) {
+        public ChangeAnnotation (string label, bool needs_confirmation = false,
+                                 string? description = null) {
             this.label = label;
             this.needs_confirmation = needs_confirmation;
             this.description = description;
@@ -148,8 +152,10 @@ namespace Lsp {
          * Deserialize this from a {@link GLib.Variant}
          */
         public ChangeAnnotation.from_variant (Variant variant) throws DeserializeError {
-            label = (string) expect_property (variant, "label", VariantType.STRING, "ChangeAnnotation");
-            var prop = lookup_property (variant, "needsConfirmation", VariantType.BOOLEAN, "ChangeAnnotation");
+            label = (string) expect_property (variant, "label", VariantType.STRING,
+                "ChangeAnnotation");
+            var prop = lookup_property (variant, "needsConfirmation", VariantType.BOOLEAN,
+                "ChangeAnnotation");
             if (prop != null)
                 needs_confirmation = (bool) prop;
             prop = lookup_property (variant, "description", VariantType.STRING, "ChangeAnnotation");
@@ -186,7 +192,9 @@ namespace Lsp {
      */
     public class TextDocumentEdit : ResourceOperation {
         public override unowned string kind {
-            get { return "textDocumentEdit"; }
+            get {
+                return "textDocumentEdit";
+            }
         }
 
         /**
@@ -208,9 +216,11 @@ namespace Lsp {
         }
 
         public TextDocumentEdit.from_variant (Variant variant) throws DeserializeError, UriError {
-            text_document = TextDocumentIdentifier.from_variant (expect_property (variant, "textDocument", VariantType.VARDICT, "LspTextDocumentEdit"));
+            text_document = TextDocumentIdentifier.from_variant (expect_property (variant,
+                "textDocument", VariantType.VARDICT, "LspTextDocumentEdit"));
             TextEdit[] edits = {};
-            foreach (var vedit in expect_property (variant, "edits", VariantType.ARRAY, "LspTextDocumentEdit"))
+            foreach (var vedit in expect_property (variant, "edits", VariantType.ARRAY,
+                "LspTextDocumentEdit"))
                 edits += TextEdit.from_variant (
                     expect_array_element (
                         vedit,

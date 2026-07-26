@@ -32,12 +32,11 @@ private void test_signature_help () {
                 MarkupKind.PLAINTEXT,
                 "The value to print")
         };
-        var offset_parameter =
-            new ParameterInformation.with_offsets (13, 19) {
-                documentation = new MarkupContent (
-                    MarkupKind.MARKDOWN,
-                    "`format` string")
-            };
+        var offset_parameter = new ParameterInformation.with_offsets (13, 19) {
+            documentation = new MarkupContent (
+                MarkupKind.MARKDOWN,
+                "`format` string")
+        };
         var signature = new SignatureInformation (
             "print_value(value, format)") {
             documentation = new MarkupContent (

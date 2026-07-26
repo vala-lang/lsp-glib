@@ -64,7 +64,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
         this.loop = loop;
     }
 
-    private async void notification_async (Jsonrpc.Client client, string method, Variant parameters) {
+    private async void notification_async (Jsonrpc.Client client, string method,
+        Variant parameters) {
         if (exited)
             return;
 
@@ -90,37 +91,49 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/didChange":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "DidChangeTextDocumentParams");
-                    var cc_variant = expect_property (parameters, "contentChanges", VariantType.ARRAY, "DidChangeTextDocumentParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "DidChangeTextDocumentParams");
+                    var cc_variant = expect_property (parameters, "contentChanges",
+                        VariantType.ARRAY, "DidChangeTextDocumentParams");
                     var content_changes = new TextDocumentContentChangeEvent[] {};
                     foreach (var cc in cc_variant) {
                         if (cc == null)
-                            throw new DeserializeError.INVALID_TYPE ("expected non-null content changes for DidChangeTextDocumentParams");
+                            throw new DeserializeError.INVALID_TYPE (
+                                "expected non-null content changes for DidChangeTextDocumentParams");
                         content_changes += TextDocumentContentChangeEvent.from_variant (
                             unwrap_variant (cc));
                     }
-                    yield text_document_did_change_async (lsp_client, TextDocumentIdentifier.from_variant (tdi_variant), content_changes);
+                    yield text_document_did_change_async (lsp_client,
+                        TextDocumentIdentifier.from_variant (tdi_variant), content_changes);
                     break;
 
                 case "textDocument/didClose":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "DidCloseTextDocumentParams");
-                    yield text_document_did_close_async (lsp_client, TextDocumentIdentifier.from_variant (tdi_variant));
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "DidCloseTextDocumentParams");
+                    yield text_document_did_close_async (lsp_client,
+                        TextDocumentIdentifier.from_variant (tdi_variant));
                     break;
 
                 case "textDocument/didOpen":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "DidOpenTextDocumentParams");
-                    yield text_document_did_open_async (lsp_client, new TextDocumentItem.from_variant (tdi_variant));
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "DidOpenTextDocumentParams");
+                    yield text_document_did_open_async (lsp_client,
+                        new TextDocumentItem.from_variant (tdi_variant));
                     break;
-                
+
                 case "textDocument/didSave":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "DidSaveTextDocumentParams");
-                    var text_variant = lookup_property (parameters, "text", VariantType.STRING, "DidSaveTextDocumentParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "DidSaveTextDocumentParams");
+                    var text_variant = lookup_property (parameters, "text", VariantType.STRING,
+                        "DidSaveTextDocumentParams");
                     string? text = text_variant != null ? (string) text_variant : null;
-                    yield text_document_did_save_async (lsp_client, TextDocumentIdentifier.from_variant (tdi_variant), text);
+                    yield text_document_did_save_async (lsp_client,
+                        TextDocumentIdentifier.from_variant (tdi_variant), text);
                     break;
 
                 case "$/setTrace":
-                    var st_value = (string) expect_property (parameters, "value", VariantType.STRING, "SetTraceParams");
+                    var st_value = (string) expect_property (parameters, "value",
+                        VariantType.STRING, "SetTraceParams");
                     trace_value = TraceValue.parse_string (st_value);
                     break;
 
@@ -139,10 +152,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @param cancellable cancelled when the remote client cancels the request
      */
-    protected virtual async void wait_for_context_update_async (Cancellable cancellable) throws Error {
+    protected virtual async void wait_for_context_update_async (
+        Cancellable cancellable) throws Error {
     }
 
-    private async void handle_call_async (Jsonrpc.Client client, string method, Variant id, Variant parameters) {
+    private async void handle_call_async (Jsonrpc.Client client, string method, Variant id,
+        Variant parameters) {
         if (exited)
             return;
 
@@ -151,7 +166,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
         try {
             if (is_shutting_down && method != "exit") {
                 debug ("rejected because we're already shutting down");
-                yield reply_error_async (client, id, ErrorCode.INVALID_REQUEST, "server is shutting down");
+                yield reply_error_async (client, id, ErrorCode.INVALID_REQUEST,
+                    "server is shutting down");
                 return;
             }
 
@@ -161,6 +177,11 @@ public abstract class Lsp.Server : Jsonrpc.Server {
 
             var lsp_client = new Client (client, request_cancellable);
             switch (method) {
+                default: {
+                    yield reply_error_async (client, id, ErrorCode.METHOD_NOT_FOUND);
+                    break;
+                }
+
                 case "initialize":
                     var init_params = new InitializeParams.from_variant (parameters);
                     var init_result = yield initialize_async (lsp_client, init_params);
@@ -174,10 +195,15 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/completion":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "CompletionParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "CompletionParams");
-                    var ctx_variant = lookup_property (parameters, "context", VariantType.VARDICT, "CompletionParams");
-                    CompletionContext? context = ctx_variant != null ? new CompletionContext.from_variant (ctx_variant) : null;
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "CompletionParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "CompletionParams");
+                    var ctx_variant = lookup_property (parameters, "context", VariantType.VARDICT,
+                        "CompletionParams");
+                    CompletionContext? context = null;
+                    if (ctx_variant != null)
+                        context = new CompletionContext.from_variant (ctx_variant);
                     CompletionItem[]? items = yield completion_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant), context);
@@ -192,8 +218,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/documentHighlight":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "DocumentHighlightParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "DocumentHighlightParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "DocumentHighlightParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "DocumentHighlightParams");
                     DocumentHighlight[]? highlights = yield document_highlight_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
@@ -208,8 +236,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/hover":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "HoverParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "HoverParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "HoverParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "HoverParams");
                     Hover? hover_result = yield hover_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
@@ -220,8 +250,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/signatureHelp":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "SignatureHelpParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "SignatureHelpParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "SignatureHelpParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "SignatureHelpParams");
                     SignatureHelp? sig_result = yield signature_help_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
@@ -263,8 +295,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/declaration":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "DeclarationParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "DeclarationParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "DeclarationParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "DeclarationParams");
                     Location[]? decl_result = yield declaration_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
@@ -279,8 +313,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/definition":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "DefinitionParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "DefinitionParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "DefinitionParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "DefinitionParams");
                     Location[]? def_result = yield definition_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
@@ -295,8 +331,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/implementation":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "ImplementationParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "ImplementationParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "ImplementationParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "ImplementationParams");
                     Location[]? impl_result = yield implementation_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
@@ -311,9 +349,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/references":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "ReferenceParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "ReferenceParams");
-                    var ctx_variant = expect_property (parameters, "context", VariantType.VARDICT, "ReferenceParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "ReferenceParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "ReferenceParams");
+                    var ctx_variant = expect_property (parameters, "context", VariantType.VARDICT,
+                        "ReferenceParams");
                     Location[]? refs = yield references_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant),
@@ -329,7 +370,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/documentSymbol":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "DocumentSymbolParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "DocumentSymbolParams");
                     DocumentSymbol[]? sym_result = yield document_symbol_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant));
                     if (sym_result == null) {
@@ -356,8 +398,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/prepareRename":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "PrepareRenameParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "PrepareRenameParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "PrepareRenameParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "PrepareRenameParams");
                     Variant? prepare_result = yield prepare_rename_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
@@ -394,8 +438,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/prepareCallHierarchy":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "CallHierarchyPrepareParams");
-                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT, "CallHierarchyPrepareParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "CallHierarchyPrepareParams");
+                    var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
+                        "CallHierarchyPrepareParams");
                     CallHierarchyItem[]? ch_result = yield prepare_call_hierarchy_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
@@ -411,7 +457,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
 
                 case "callHierarchy/incomingCalls":
                     var item = new CallHierarchyItem.from_variant (parameters);
-                    CallHierarchyIncomingCall[]? in_result = yield incoming_calls_async (lsp_client, item);
+                    CallHierarchyIncomingCall[]? in_result = yield incoming_calls_async (lsp_client,
+                        item);
                     if (in_result == null) {
                         yield reply_null_async (client, id, cancellable);
                     } else {
@@ -424,7 +471,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
 
                 case "callHierarchy/outgoingCalls":
                     var out_item = new CallHierarchyItem.from_variant (parameters);
-                    CallHierarchyOutgoingCall[]? out_result = yield outgoing_calls_async (lsp_client, out_item);
+                    CallHierarchyOutgoingCall[]? out_result =
+                        yield outgoing_calls_async (lsp_client, out_item);
                     if (out_result == null) {
                         yield reply_null_async (client, id, cancellable);
                     } else {
@@ -436,7 +484,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/codeLens":
-                    var tdi_variant = expect_property (parameters, "textDocument", VariantType.VARDICT, "CodeLensParams");
+                    var tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "CodeLensParams");
                     CodeLens[]? lenses = yield code_lens_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant));
                     if (lenses == null) {
@@ -450,8 +499,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "workspace/symbol":
-                    var query = (string) expect_property (parameters, "query", VariantType.STRING, "WorkspaceSymbolParams");
-                    SymbolInformation[]? sym_result = yield workspace_symbol_async (lsp_client, query);
+                    var query = (string) expect_property (parameters, "query", VariantType.STRING,
+                        "WorkspaceSymbolParams");
+                    SymbolInformation[]? sym_result = yield workspace_symbol_async (lsp_client,
+                        query);
                     if (sym_result == null) {
                         yield reply_null_async (client, id, cancellable);
                     } else {
@@ -463,9 +514,13 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     break;
 
                 case "textDocument/codeAction":
-                    var text_document = TextDocumentIdentifier.from_variant (expect_property (parameters, "textDocument", VariantType.VARDICT, "CodeActionParams"));
-                    var range = Range.from_variant (expect_property (parameters, "range", VariantType.VARDICT, "CodeActionParams"));
-                    var context = new CodeActionContext.from_variant (expect_property (parameters, "context", VariantType.VARDICT, "CodeActionParams"));
+                    var text_document =
+                        TextDocumentIdentifier.from_variant (expect_property (parameters,
+                            "textDocument", VariantType.VARDICT, "CodeActionParams"));
+                    var range = Range.from_variant (expect_property (parameters, "range",
+                        VariantType.VARDICT, "CodeActionParams"));
+                    var context = new CodeActionContext.from_variant (expect_property (parameters,
+                        "context", VariantType.VARDICT, "CodeActionParams"));
                     var action_result = yield code_action_async (
                         lsp_client,
                         text_document,
@@ -482,10 +537,6 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                             actions += action.to_variant ();
                         yield client.reply_async (id, actions, cancellable);
                     }
-                    break;
-
-                default:
-                    yield reply_error_async (client, id, ErrorCode.METHOD_NOT_FOUND);
                     break;
             }
         } catch (IOError.CANCELLED e) {
@@ -505,7 +556,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
         }
     }
 
-    private async void reply_error_async (Jsonrpc.Client client, Variant id, ErrorCode error_code, string? message = null) {
+    private async void reply_error_async (Jsonrpc.Client client, Variant id, ErrorCode error_code,
+        string? message = null) {
         try {
             yield client.reply_error_async (id, error_code, message, cancellable);
         } catch (Error e) {
@@ -545,7 +597,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
             active_requests.remove (client);
     }
 
-    private void cancel_request (Jsonrpc.Client client, Variant parameters) throws DeserializeError {
+    private void cancel_request (Jsonrpc.Client client,
+        Variant parameters) throws DeserializeError {
         if (!parameters.is_of_type (VariantType.VARDICT))
             throw new DeserializeError.INVALID_TYPE ("expected dictionary for CancelParams");
 
@@ -553,7 +606,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
         if (id == null)
             throw new DeserializeError.MISSING_PROPERTY ("missing property `id` for CancelParams");
         if (!id.is_of_type (VariantType.INT64) && !id.is_of_type (VariantType.STRING))
-            throw new DeserializeError.INVALID_TYPE ("expected integer or string property `id` for CancelParams");
+            throw new DeserializeError.INVALID_TYPE (
+                "expected integer or string property `id` for CancelParams");
 
         HashTable<Variant, Cancellable>? requests = active_requests[client];
         Cancellable? request_cancellable = requests != null ? requests[id] : null;
@@ -603,9 +657,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * allowed to use that token (and only that token) using the $/progress
      * notification sent from the server to the client.
      *
-     * The initialize request may only be sent once. 
+     * The initialize request may only be sent once.
      */
-    protected abstract async InitializeResult initialize_async (Client client, InitializeParams init_params) throws Error;
+    protected abstract async InitializeResult initialize_async (Client client,
+        InitializeParams init_params) throws Error;
 
     /**
      * The initialized notification is sent from the client to the server after
@@ -634,7 +689,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * ability to fulfill requests is independent of whether a text document is
      * open or closed.
      */
-    protected abstract async void text_document_did_open_async (Client client, TextDocumentItem text_document) throws Error;
+    protected abstract async void text_document_did_open_async (Client client,
+        TextDocumentItem text_document) throws Error;
 
     /**
      * The document change notification is sent from the client to the server to
@@ -656,9 +712,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *                          - apply the `TextDocumentContentChangeEvent`s in a single notification
      *                            in the order you receive them.
      */
-    protected abstract async void text_document_did_change_async (Client client, TextDocumentIdentifier text_document,
-                                                                  (unowned TextDocumentContentChangeEvent)[] content_changes) throws Error;
-    
+    protected abstract async void text_document_did_change_async (Client client,
+        TextDocumentIdentifier text_document,
+        (unowned TextDocumentContentChangeEvent)[] content_changes) throws Error;
+
     /**
      * The document save notification is sent from the client to the server when
      * the document was saved in the client.
@@ -667,15 +724,16 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * @param text              The content when saved. Depends on whether the
      *                          server has opted to receive this.
      */
-    protected virtual async void text_document_did_save_async (Client client, TextDocumentIdentifier text_document,
-                                                               string? text) throws Error {
+    protected virtual async void text_document_did_save_async (Client client,
+        TextDocumentIdentifier text_document,
+        string? text) throws Error {
         // do nothing
     }
 
     /**
      * The document close notification is sent from the client to the server
      * when the document got closed in the client.
-     * 
+     *
      * The document’s master now exists where the document’s URI points to (e.g.
      * if the document’s URI is a file URI the master now exists on disk). As
      * with the open notification the close notification is about managing the
@@ -687,7 +745,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @param text_document     The document that was closed.
      */
-    protected abstract async void text_document_did_close_async (Client client, TextDocumentIdentifier text_document) throws Error;
+    protected abstract async void text_document_did_close_async (Client client,
+        TextDocumentIdentifier text_document) throws Error;
 
     /**
      * The code action request is sent from the client to the server to compute
@@ -699,10 +758,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * server and not by the client (see workspace/executeCommand and
      * ServerCapabilities.executeCommandProvider). If the client supports providing
      * edits with a code action then that mode should be used.
-     * 
+     *
      * Since version 3.16.0: a client can offer a server to delay the computation of
      * code action properties during a ‘textDocument/codeAction’ request:
-     * 
+     *
      * This is useful for cases where it is expensive to compute the value of a
      * property (for example the edit property). Clients signal this through the
      * codeAction.resolveSupport capability which lists all properties a client can
@@ -714,10 +773,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * data support if it offers resolve support. It should also be noted that servers
      * shouldn’t alter existing attributes of a code action in a codeAction/resolve
      * request.
-     * 
+     *
      * Since version 3.8.0: support for CodeAction literals to enable the
      * following scenarios:
-     * 
+     *
      *  * the ability to directly return a workspace edit from the code action
      *    request. This avoids having another server roundtrip to execute an actual
      *    code action. However server providers should be aware that if the code
@@ -728,7 +787,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *    Clients are allowed to ignore that information. However it allows them to
      *    better group code action for example into corresponding menus (e.g. all
      *    refactor code actions into a refactor menu).
-     * 
+     *
      * Clients need to announce their support for code action literals (e.g. literals
      * of type CodeAction) and code action kinds via the corresponding client
      * capability codeAction.codeActionLiteralSupport.
@@ -740,8 +799,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * @return a list of code actions and commands available at the current
      *         range in the document
      */
-    protected virtual async Action[]? code_action_async (Client client, TextDocumentIdentifier text_document, Range range, CodeActionContext context) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/codeAction is not implemented");
+    protected virtual async Action[]? code_action_async (Client client,
+        TextDocumentIdentifier text_document, Range range, CodeActionContext context) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/codeAction is not implemented");
     }
 
     /**
@@ -761,8 +822,11 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of completion items, or null if there are none
      */
-    protected virtual async CompletionItem[]? completion_async (Client client, TextDocumentIdentifier text_document, Position position, CompletionContext? context) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/completion is not implemented");
+    protected virtual async CompletionItem[]? completion_async (Client client,
+        TextDocumentIdentifier text_document, Position position,
+        CompletionContext? context) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/completion is not implemented");
     }
 
     /**
@@ -774,7 +838,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return the hover information, or null if none
      */
-    protected virtual async Hover? hover_async (Client client, TextDocumentIdentifier text_document, Position position) throws Error {
+    protected virtual async Hover? hover_async (Client client, TextDocumentIdentifier text_document,
+        Position position) throws Error {
         throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/hover is not implemented");
     }
 
@@ -787,8 +852,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return signature help information, or null if none
      */
-    protected virtual async SignatureHelp? signature_help_async (Client client, TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/signatureHelp is not implemented");
+    protected virtual async SignatureHelp? signature_help_async (Client client,
+        TextDocumentIdentifier text_document, Position position) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/signatureHelp is not implemented");
     }
 
     /**
@@ -801,8 +868,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of locations where the symbol is declared, or null
      */
-    protected virtual async Location[]? declaration_async (Client client, TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/declaration is not implemented");
+    protected virtual async Location[]? declaration_async (Client client,
+        TextDocumentIdentifier text_document, Position position) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/declaration is not implemented");
     }
 
     /**
@@ -815,8 +884,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of locations where the symbol is defined, or null
      */
-    protected virtual async Location[]? definition_async (Client client, TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/definition is not implemented");
+    protected virtual async Location[]? definition_async (Client client,
+        TextDocumentIdentifier text_document, Position position) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/definition is not implemented");
     }
 
     /**
@@ -832,8 +903,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of document highlights, or null if there are none
      */
-    protected virtual async DocumentHighlight[]? document_highlight_async (Client client, TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/documentHighlight is not implemented");
+    protected virtual async DocumentHighlight[]? document_highlight_async (Client client,
+        TextDocumentIdentifier text_document, Position position) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/documentHighlight is not implemented");
     }
 
     /**
@@ -844,8 +917,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of document symbols, or null if there are none
      */
-    protected virtual async DocumentSymbol[]? document_symbol_async (Client client, TextDocumentIdentifier text_document) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/documentSymbol is not implemented");
+    protected virtual async DocumentSymbol[]? document_symbol_async (Client client,
+        TextDocumentIdentifier text_document) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/documentSymbol is not implemented");
     }
 
     /**
@@ -857,7 +932,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * @return a list of symbol informations matching the query, or null
      *         if there are none
      */
-    protected virtual async SymbolInformation[]? workspace_symbol_async (Client client, string query) throws Error {
+    protected virtual async SymbolInformation[]? workspace_symbol_async (Client client,
+        string query) throws Error {
         throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("workspace/symbol is not implemented");
     }
 
@@ -872,8 +948,11 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of locations for the references, or null
      */
-    protected virtual async Location[]? references_async (Client client, TextDocumentIdentifier text_document, Position position, ReferenceContext context) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/references is not implemented");
+    protected virtual async Location[]? references_async (Client client,
+        TextDocumentIdentifier text_document, Position position,
+        ReferenceContext context) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/references is not implemented");
     }
 
     /**
@@ -887,8 +966,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * @return a list of locations where the symbol is implemented,
      *         or null
      */
-    protected virtual async Location[]? implementation_async (Client client, TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/implementation is not implemented");
+    protected virtual async Location[]? implementation_async (Client client,
+        TextDocumentIdentifier text_document, Position position) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/implementation is not implemented");
     }
 
     /**
@@ -901,7 +982,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a workspace edit describing the rename, or null
      */
-    protected virtual async WorkspaceEdit? rename_async (Client client, TextDocumentIdentifier text_document, Position position, string new_name) throws Error {
+    protected virtual async WorkspaceEdit? rename_async (Client client,
+        TextDocumentIdentifier text_document, Position position, string new_name) throws Error {
         throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/rename is not implemented");
     }
 
@@ -914,8 +996,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a Variant describing the prepared rename range, or null
      */
-    protected virtual async Variant? prepare_rename_async (Client client, TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/prepareRename is not implemented");
+    protected virtual async Variant? prepare_rename_async (Client client,
+        TextDocumentIdentifier text_document, Position position) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/prepareRename is not implemented");
     }
 
     /**
@@ -926,7 +1010,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of code lenses, or null if there are none
      */
-    protected virtual async CodeLens[]? code_lens_async (Client client, TextDocumentIdentifier text_document) throws Error {
+    protected virtual async CodeLens[]? code_lens_async (Client client,
+        TextDocumentIdentifier text_document) throws Error {
         throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/codeLens is not implemented");
     }
 
@@ -939,8 +1024,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of text edits, or null if no formatting is needed
      */
-    protected virtual async TextEdit[]? formatting_async (Client client, TextDocumentIdentifier text_document, FormattingOptions options) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/formatting is not implemented");
+    protected virtual async TextEdit[]? formatting_async (Client client,
+        TextDocumentIdentifier text_document, FormattingOptions options) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/formatting is not implemented");
     }
 
     /**
@@ -953,8 +1040,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of text edits, or null if no formatting is needed
      */
-    protected virtual async TextEdit[]? range_formatting_async (Client client, TextDocumentIdentifier text_document, Range range, FormattingOptions options) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/rangeFormatting is not implemented");
+    protected virtual async TextEdit[]? range_formatting_async (Client client,
+        TextDocumentIdentifier text_document, Range range, FormattingOptions options) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/rangeFormatting is not implemented");
     }
 
     /**
@@ -967,8 +1056,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of call hierarchy items, or null
      */
-    protected virtual async CallHierarchyItem[]? prepare_call_hierarchy_async (Client client, TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/prepareCallHierarchy is not implemented");
+    protected virtual async CallHierarchyItem[]? prepare_call_hierarchy_async (Client client,
+        TextDocumentIdentifier text_document, Position position) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/prepareCallHierarchy is not implemented");
     }
 
     /**
@@ -979,8 +1070,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of incoming calls, or null
      */
-    protected virtual async CallHierarchyIncomingCall[]? incoming_calls_async (Client client, CallHierarchyItem item) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("callHierarchy/incomingCalls is not implemented");
+    protected virtual async CallHierarchyIncomingCall[]? incoming_calls_async (Client client,
+        CallHierarchyItem item) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "callHierarchy/incomingCalls is not implemented");
     }
 
     /**
@@ -991,8 +1084,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of outgoing calls, or null
      */
-    protected virtual async CallHierarchyOutgoingCall[]? outgoing_calls_async (Client client, CallHierarchyItem item) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("callHierarchy/outgoingCalls is not implemented");
+    protected virtual async CallHierarchyOutgoingCall[]? outgoing_calls_async (Client client,
+        CallHierarchyItem item) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "callHierarchy/outgoingCalls is not implemented");
     }
 
     /**
@@ -1004,8 +1099,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of inlay hints, or null
      */
-    protected virtual async InlayHint[]? inlay_hint_async (Client client, TextDocumentIdentifier text_document, Range range) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/inlayHint is not implemented");
+    protected virtual async InlayHint[]? inlay_hint_async (Client client,
+        TextDocumentIdentifier text_document, Range range) throws Error {
+        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+            "textDocument/inlayHint is not implemented");
     }
 
     /**
@@ -1016,7 +1113,8 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return the resolved inlay hint, or null
      */
-    protected virtual async InlayHint? inlay_hint_resolve_async (Client client, InlayHint hint) throws Error {
+    protected virtual async InlayHint? inlay_hint_resolve_async (Client client,
+        InlayHint hint) throws Error {
         throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("inlayHint/resolve is not implemented");
     }
 

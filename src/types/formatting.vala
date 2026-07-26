@@ -59,14 +59,19 @@ namespace Lsp {
         }
 
         public FormattingOptions.from_variant (Variant dict) throws DeserializeError {
-            tab_size = (int) (int64) expect_property (dict, "tabSize", VariantType.INT64, "FormattingOptions");
-            insert_spaces = (bool) expect_property (dict, "insertSpaces", VariantType.BOOLEAN, "FormattingOptions");
+            tab_size = (int) (int64) expect_property (dict, "tabSize", VariantType.INT64,
+                "FormattingOptions");
+            insert_spaces = (bool) expect_property (dict, "insertSpaces", VariantType.BOOLEAN,
+                "FormattingOptions");
             Variant? prop;
-            if ((prop = lookup_property (dict, "trimTrailingWhitespace", VariantType.BOOLEAN, "FormattingOptions")) != null && (bool)prop)
+            if ((prop = lookup_property (dict, "trimTrailingWhitespace", VariantType.BOOLEAN,
+                "FormattingOptions")) != null && (bool) prop)
                 flags |= FormattingOptionFlags.TRIM_TRAILING_WHITESPACE;
-            if ((prop = lookup_property (dict, "insertFinalNewline", VariantType.BOOLEAN, "FormattingOptions")) != null && (bool)prop)
+            if ((prop = lookup_property (dict, "insertFinalNewline", VariantType.BOOLEAN,
+                "FormattingOptions")) != null && (bool) prop)
                 flags |= FormattingOptionFlags.INSERT_FINAL_NEWLINE;
-            if ((prop = lookup_property (dict, "trimFinalNewlines", VariantType.BOOLEAN, "FormattingOptions")) != null && (bool)prop)
+            if ((prop = lookup_property (dict, "trimFinalNewlines", VariantType.BOOLEAN,
+                "FormattingOptions")) != null && (bool) prop)
                 flags |= FormattingOptionFlags.TRIM_FINAL_NEWLINES;
         }
 
@@ -98,14 +103,18 @@ namespace Lsp {
          */
         public FormattingOptions options { get; set; }
 
-        public DocumentFormattingParams (TextDocumentIdentifier text_document, FormattingOptions options) {
+        public DocumentFormattingParams (TextDocumentIdentifier text_document,
+                                         FormattingOptions options) {
             this.text_document = text_document;
             this.options = options;
         }
 
-        public DocumentFormattingParams.from_variant (Variant dict) throws DeserializeError, UriError {
-            text_document = TextDocumentIdentifier.from_variant (expect_property (dict, "textDocument", VariantType.VARDICT, "DocumentFormattingParams"));
-            options = new FormattingOptions.from_variant (expect_property (dict, "options", VariantType.VARDICT, "DocumentFormattingParams"));
+        public DocumentFormattingParams.from_variant (Variant dict) throws DeserializeError,
+        UriError {
+            text_document = TextDocumentIdentifier.from_variant (expect_property (dict,
+                "textDocument", VariantType.VARDICT, "DocumentFormattingParams"));
+            options = new FormattingOptions.from_variant (expect_property (dict, "options",
+                VariantType.VARDICT, "DocumentFormattingParams"));
         }
 
         public Variant to_variant () {
@@ -135,16 +144,21 @@ namespace Lsp {
          */
         public FormattingOptions options { get; set; }
 
-        public DocumentRangeFormattingParams (TextDocumentIdentifier text_document, Range range, FormattingOptions options) {
+        public DocumentRangeFormattingParams (TextDocumentIdentifier text_document, Range range,
+                                              FormattingOptions options) {
             this.text_document = text_document;
             this.range = range;
             this.options = options;
         }
 
-        public DocumentRangeFormattingParams.from_variant (Variant dict) throws DeserializeError, UriError {
-            text_document = TextDocumentIdentifier.from_variant (expect_property (dict, "textDocument", VariantType.VARDICT, "DocumentRangeFormattingParams"));
-            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT, "DocumentRangeFormattingParams"));
-            options = new FormattingOptions.from_variant (expect_property (dict, "options", VariantType.VARDICT, "DocumentRangeFormattingParams"));
+        public DocumentRangeFormattingParams.from_variant (Variant dict) throws DeserializeError,
+        UriError {
+            text_document = TextDocumentIdentifier.from_variant (expect_property (dict,
+                "textDocument", VariantType.VARDICT, "DocumentRangeFormattingParams"));
+            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT,
+                "DocumentRangeFormattingParams"));
+            options = new FormattingOptions.from_variant (expect_property (dict, "options",
+                VariantType.VARDICT, "DocumentRangeFormattingParams"));
         }
 
         public Variant to_variant () {

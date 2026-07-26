@@ -63,7 +63,8 @@ namespace Lsp {
         }
 
         public CodeLens.from_variant (Variant dict) throws DeserializeError {
-            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT, "CodeLens"));
+            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT,
+                "CodeLens"));
             var prop = lookup_property (dict, "command", VariantType.VARDICT, "CodeLens");
             if (prop != null)
                 command = new Command.from_variant (prop);
@@ -97,7 +98,8 @@ namespace Lsp {
         }
 
         public CodeLensParams.from_variant (Variant dict) throws DeserializeError, UriError {
-            text_document = TextDocumentIdentifier.from_variant (expect_property (dict, "textDocument", VariantType.VARDICT, "CodeLensParams"));
+            text_document = TextDocumentIdentifier.from_variant (expect_property (dict,
+                "textDocument", VariantType.VARDICT, "CodeLensParams"));
         }
 
         public Variant to_variant () {

@@ -34,7 +34,8 @@ namespace Lsp {
         }
 
         public ReferenceContext.from_variant (Variant dict) throws DeserializeError {
-            include_declaration = (bool) expect_property (dict, "includeDeclaration", VariantType.BOOLEAN, "ReferenceContext");
+            include_declaration = (bool) expect_property (dict, "includeDeclaration",
+                VariantType.BOOLEAN, "ReferenceContext");
         }
 
         public Variant to_variant () {

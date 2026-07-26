@@ -4,8 +4,9 @@
 #include "test-stream.h"
 
 /*
- * Exercise Editor in both directions: its typed document API drives Server,
- * then the captured LspClient drives Editor signals and async vfuncs.
+ * Exercise both directions of one JSON-RPC connection. The Editor first sends
+ * document lifecycle messages to TestServer; the server's captured LspClient
+ * then sends UI notifications and requests back to TestEditor.
  */
 
 typedef enum
@@ -271,6 +272,8 @@ test_server_and_editor (void)
   workspace = lsp_workspace_folder_new (
       workspace_uri,
       "workspace");
+
+  /* Both peers can issue requests over the same duplex stream pair. */
   create_test_stream_pair (&server_stream, &editor_stream);
   jsonrpc_server_accept_io_stream (
       JSONRPC_SERVER (server),
@@ -357,6 +360,7 @@ test_server_and_editor (void)
       lsp_editor_get_text_documents (LSP_EDITOR (editor)),
       document_uri));
 
+  /* Initialization exposes the reverse-facing client used by the server. */
   g_assert_nonnull (server->peer_client);
 
   {
@@ -529,6 +533,7 @@ test_server_and_editor (void)
       ==,
       "Apply generated edit");
 
+  /* Event order also catches handlers that finish late or are skipped. */
   g_assert_cmpuint (
       server->n_events,
       ==,

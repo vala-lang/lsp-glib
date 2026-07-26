@@ -27,7 +27,7 @@ namespace Lsp {
         cname = "lsp_jsonrpc_client_reply_null_async",
         cheader_filename = "io/jsonrpc-reply.h",
         finish_name = "lsp_jsonrpc_client_reply_null_finish"
-    )]
+     )]
     extern async bool reply_null_async (
         Jsonrpc.Client client,
         Variant id,
@@ -40,34 +40,37 @@ namespace Lsp {
 
     public bool uri_equal (Uri a, Uri b) {
         return a.get_auth_params () == b.get_auth_params () &&
-            a.get_fragment () == b.get_fragment () &&
-            a.get_query () == b.get_query () &&
-            a.get_path () == b.get_path () &&
-            a.get_port () == b.get_port () &&
-            a.get_host () == b.get_host () &&
-            a.get_scheme () == b.get_scheme () &&
-            a.get_userinfo () == b.get_userinfo ();
+               a.get_fragment () == b.get_fragment () &&
+               a.get_query () == b.get_query () &&
+               a.get_path () == b.get_path () &&
+               a.get_port () == b.get_port () &&
+               a.get_host () == b.get_host () &&
+               a.get_scheme () == b.get_scheme () &&
+               a.get_userinfo () == b.get_userinfo ();
     }
 
     /**
      * Expect a property on a variant.
      */
     Variant expect_property (Variant dict, string property_name,
-                             VariantType expected_type,
-                             string parent_type_name) throws DeserializeError {
+        VariantType expected_type,
+        string parent_type_name) throws DeserializeError {
         if (!dict.is_of_type (VariantType.VARDICT))
-            throw new DeserializeError.INVALID_TYPE ("expected dictionary for %s", parent_type_name);
+            throw new DeserializeError.INVALID_TYPE ("expected dictionary for %s",
+                parent_type_name);
         var prop = dict.lookup_value (property_name, expected_type);
         if (prop == null)
-            throw new DeserializeError.MISSING_PROPERTY ("missing property `%s` for %s", property_name, parent_type_name);
+            throw new DeserializeError.MISSING_PROPERTY ("missing property `%s` for %s",
+                property_name, parent_type_name);
         return prop;
     }
 
     Variant? lookup_property (Variant dict, string property_name,
-                              VariantType expected_type,
-                              string parent_type_name) throws DeserializeError {
+        VariantType expected_type,
+        string parent_type_name) throws DeserializeError {
         if (!dict.is_of_type (VariantType.VARDICT))
-            throw new DeserializeError.INVALID_TYPE ("expected dictionary for %s", parent_type_name);
+            throw new DeserializeError.INVALID_TYPE ("expected dictionary for %s",
+                parent_type_name);
         return dict.lookup_value (property_name, expected_type);
     }
 

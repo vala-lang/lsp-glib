@@ -45,7 +45,8 @@ namespace Lsp {
      * visualized by changing the background color of its range.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_document_highlight_ref", unref_function = "lsp_document_highlight_unref")]
+    [CCode (ref_function = "lsp_document_highlight_ref",
+        unref_function = "lsp_document_highlight_unref")]
     public class DocumentHighlight {
         private int ref_count = 1;
 
@@ -79,9 +80,11 @@ namespace Lsp {
         public DocumentHighlight.from_variant (Variant dict) throws DeserializeError {
             Variant? prop = null;
 
-            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT, "DocumentHighlight"));
+            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT,
+                "DocumentHighlight"));
 
-            if ((prop = lookup_property (dict, "kind", VariantType.INT64, "DocumentHighlight")) != null)
+            if ((prop = lookup_property (dict, "kind", VariantType.INT64,
+                "DocumentHighlight")) != null)
                 kind = (DocumentHighlightKind) (int64) prop;
         }
 

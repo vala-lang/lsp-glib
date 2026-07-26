@@ -24,7 +24,8 @@ namespace Lsp {
      * have a label and a doc-comment.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_parameter_information_ref", unref_function = "lsp_parameter_information_unref")]
+    [CCode (ref_function = "lsp_parameter_information_ref",
+        unref_function = "lsp_parameter_information_unref")]
     public class ParameterInformation {
         private int ref_count = 1;
 
@@ -108,9 +109,11 @@ namespace Lsp {
                 label = "";
                 has_label_offsets = true;
             } else
-                throw new DeserializeError.INVALID_TYPE ("expected string or [uint, uint] for ParameterInformation.label");
+                throw new DeserializeError.INVALID_TYPE (
+                    "expected string or [uint, uint] for ParameterInformation.label");
 
-            var doc_prop = lookup_property (dict, "documentation", VariantType.ANY, "ParameterInformation");
+            var doc_prop = lookup_property (dict, "documentation", VariantType.ANY,
+                "ParameterInformation");
             if (doc_prop != null)
                 documentation = new MarkupContent.from_variant (doc_prop);
         }
@@ -138,7 +141,8 @@ namespace Lsp {
      * can have a label, a doc-comment, and a set of parameters.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_signature_information_ref", unref_function = "lsp_signature_information_unref")]
+    [CCode (ref_function = "lsp_signature_information_ref",
+        unref_function = "lsp_signature_information_unref")]
     public class SignatureInformation {
         private int ref_count = 1;
 
@@ -188,13 +192,16 @@ namespace Lsp {
         public SignatureInformation.from_variant (Variant dict) throws DeserializeError {
             Variant? prop = null;
 
-            label = (string) expect_property (dict, "label", VariantType.STRING, "SignatureInformation");
+            label = (string) expect_property (dict, "label", VariantType.STRING,
+                "SignatureInformation");
 
-            if ((prop = lookup_property (dict, "documentation", VariantType.ANY, "SignatureInformation")) != null)
+            if ((prop = lookup_property (dict, "documentation", VariantType.ANY,
+                "SignatureInformation")) != null)
                 documentation = new MarkupContent.from_variant (
                     unwrap_variant (prop));
 
-            if ((prop = lookup_property (dict, "parameters", VariantType.ARRAY, "SignatureInformation")) != null) {
+            if ((prop = lookup_property (dict, "parameters", VariantType.ARRAY,
+                "SignatureInformation")) != null) {
                 ParameterInformation[] params = {};
                 foreach (var param_v in prop)
                     params += new ParameterInformation.from_variant (
@@ -226,11 +233,13 @@ namespace Lsp {
                 Variant[] param_list = {};
                 foreach (unowned var param in parameters)
                     param_list += param.to_variant ();
-                dict.insert_value ("parameters", new Variant.array (VariantType.VARDICT, param_list));
+                dict.insert_value ("parameters",
+                    new Variant.array (VariantType.VARDICT, param_list));
             }
 
             if (active_parameter != null)
-                dict.insert_value ("activeParameter", new Variant.uint64 ((uint64) active_parameter));
+                dict.insert_value ("activeParameter",
+                    new Variant.uint64 ((uint64) active_parameter));
 
             return dict.end ();
         }
@@ -287,7 +296,8 @@ namespace Lsp {
             Variant? prop = null;
 
             SignatureInformation[] sigs = {};
-            foreach (var sig_v in expect_property (dict, "signatures", VariantType.ARRAY, "SignatureHelp"))
+            foreach (var sig_v in expect_property (dict, "signatures", VariantType.ARRAY,
+                "SignatureHelp"))
                 sigs += new SignatureInformation.from_variant (
                     expect_array_element (
                         sig_v,

@@ -78,7 +78,8 @@ namespace Lsp {
      * Sent from the client / editor to the server.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_initialize_params_ref", unref_function = "lsp_initialize_params_unref")]
+    [CCode (ref_function = "lsp_initialize_params_ref",
+        unref_function = "lsp_initialize_params_unref")]
     public class InitializeParams {
         private int ref_count = 1;
 
@@ -173,7 +174,7 @@ namespace Lsp {
          * @param secondary_workspaces additional workspace folders
          */
         public InitializeParams.with_workspace_folders (WorkspaceFolder primary_workspace,
-                                                        (unowned WorkspaceFolder)[]? secondary_workspaces = null) throws ConvertError {
+            (unowned WorkspaceFolder)[]? secondary_workspaces = null) throws ConvertError {
             this ();
             WorkspaceFolder[] temp_workspaces = {};
 
@@ -193,22 +194,23 @@ namespace Lsp {
             Variant? prop = null;
 
             if ((prop = dict.lookup_value ("processId", VariantType.INT64)) != null)
-                process_id = (int64)prop;
+                process_id = (int64) prop;
 
             if ((prop = dict.lookup_value ("clientInfo", VariantType.VARDICT)) != null)
                 client_info = new ClientInfo.from_variant (prop);
 
             if ((prop = dict.lookup_value ("locale", VariantType.STRING)) != null)
-                locale = (string)prop;
+                locale = (string) prop;
 
             if ((prop = dict.lookup_value ("rootPath", VariantType.STRING)) != null)
-                root_path = (string)prop;
+                root_path = (string) prop;
 
             if ((prop = dict.lookup_value ("rootUri", VariantType.STRING)) != null) {
                 try {
-                    root_uri = Uri.parse ((string)prop, UriFlags.NONE);
+                    root_uri = Uri.parse ((string) prop, UriFlags.NONE);
                 } catch (UriError e) {
-                    throw new DeserializeError.INVALID_TYPE ("invalid rootUri in InitializeParams: %s", e.message);
+                    throw new DeserializeError.INVALID_TYPE (
+                        "invalid rootUri in InitializeParams: %s", e.message);
                 }
             }
 
@@ -216,7 +218,7 @@ namespace Lsp {
                 capabilities = new ClientCaps.from_variant (prop);
 
             if ((prop = dict.lookup_value ("trace", VariantType.STRING)) != null)
-                trace = TraceValue.parse_string ((string)prop);
+                trace = TraceValue.parse_string ((string) prop);
 
             if ((prop = dict.lookup_value ("workspaceFolders", VariantType.ARRAY)) != null) {
                 WorkspaceFolder[] folders = {};
@@ -241,7 +243,7 @@ namespace Lsp {
             var dict = new VariantDict ();
 
             if (process_id != null)
-                dict.insert_value ("processId", (int64)process_id);
+                dict.insert_value ("processId", (int64) process_id);
             if (client_info != null)
                 dict.insert_value ("clientInfo", client_info.to_variant ());
             if (locale != null)
@@ -258,7 +260,8 @@ namespace Lsp {
                 Variant[] workspaces_list = {};
                 foreach (unowned var workspace in workspaces)
                     workspaces_list += workspace.to_variant ();
-                dict.insert_value ("workspaceFolders", new Variant.array (VariantType.VARDICT, workspaces_list));
+                dict.insert_value ("workspaceFolders",
+                    new Variant.array (VariantType.VARDICT, workspaces_list));
             }
             if (initialization_options != null)
                 dict.insert_value ("initializationOptions", initialization_options);
@@ -301,9 +304,9 @@ namespace Lsp {
             Variant? prop;
 
             if ((prop = dict.lookup_value ("name", VariantType.STRING)) != null)
-                name = (string)prop;
+                name = (string) prop;
             if ((prop = dict.lookup_value ("version", VariantType.STRING)) != null)
-                version = (string)prop;
+                version = (string) prop;
         }
 
         public Variant to_variant () {
@@ -322,7 +325,8 @@ namespace Lsp {
      * initialization.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_initialize_result_ref", unref_function = "lsp_initialize_result_unref")]
+    [CCode (ref_function = "lsp_initialize_result_ref",
+        unref_function = "lsp_initialize_result_unref")]
     public class InitializeResult {
         private int ref_count = 1;
 
@@ -356,7 +360,8 @@ namespace Lsp {
 
         public InitializeResult.from_variant (Variant variant) throws DeserializeError {
             capabilities = new ServerCaps.from_variant (
-                expect_property (variant, "capabilities", VariantType.VARDICT, typeof (InitializeResult).name ()));
+                expect_property (variant, "capabilities", VariantType.VARDICT,
+                    typeof (InitializeResult).name ()));
 
             Variant? prop;
             if ((prop = variant.lookup_value ("serverInfo", VariantType.VARDICT)) != null)

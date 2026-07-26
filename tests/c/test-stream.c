@@ -1,5 +1,11 @@
 #include "test-stream.h"
 
+/*
+ * A small in-memory duplex transport for the Server and Editor tests. Each end
+ * reads what the other writes, while the condition variable preserves normal
+ * blocking and cancellation behavior without platform-specific socket APIs.
+ */
+
 typedef struct
 {
   GObject parent_instance;

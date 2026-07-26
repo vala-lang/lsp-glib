@@ -3,8 +3,9 @@
 #include "test-stream.h"
 
 /*
- * Drive the basic Server lifecycle and document vfuncs through LspEditor.
- * The fixture only inspects values after framed JSON-RPC deserialization.
+ * Connect a real LspEditor to TestServer over framed JSON-RPC, then run the
+ * normal server lifecycle. Assertions inspect values recorded by the vfuncs,
+ * proving that requests were decoded before reaching the implementation.
  */
 
 typedef enum
@@ -186,6 +187,7 @@ test_editor_drives_server (void)
   g_assert_no_error (error);
   lsp_initialize_params_set_locale (init_params, "en-US");
 
+  /* Every call below crosses this in-memory JSON-RPC connection. */
   create_test_stream_pair (&server_stream, &editor_stream);
   jsonrpc_server_accept_io_stream (
       JSONRPC_SERVER (server),
@@ -296,6 +298,7 @@ test_editor_drives_server (void)
   wait_for_events (server, 15);
   g_assert_true (lsp_editor_get_exited (editor));
 
+  /* Check the decoded payloads in addition to the lifecycle event order. */
   g_assert_cmpstr (
       server->opened_uri,
       ==,

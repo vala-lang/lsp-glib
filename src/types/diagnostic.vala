@@ -25,7 +25,8 @@ namespace Lsp {
      * @since 3.16.0
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_code_description_ref", unref_function = "lsp_code_description_unref")]
+    [CCode (ref_function = "lsp_code_description_ref",
+        unref_function = "lsp_code_description_unref")]
     public class CodeDescription {
         private int ref_count = 1;
 
@@ -103,7 +104,8 @@ namespace Lsp {
         public static DiagnosticTag parse_int (int value) throws DeserializeError {
             if (value == UNNECESSARY || value == DEPRECATED)
                 return value;
-            throw new DeserializeError.INVALID_TYPE ("%d is not a %s", value, typeof (DiagnosticTag).name ());
+            throw new DeserializeError.INVALID_TYPE ("%d is not a %s", value,
+                typeof (DiagnosticTag).name ());
         }
     }
 
@@ -129,9 +131,12 @@ namespace Lsp {
             this.message = message;
         }
 
-        public DiagnosticRelatedInformation.from_variant (Variant variant) throws UriError, DeserializeError {
-            location = Location.from_variant (expect_property (variant, "location", VariantType.VARDICT, typeof (DiagnosticRelatedInformation).name ()));
-            message = (string) expect_property (variant, "message", VariantType.STRING, typeof (DiagnosticRelatedInformation).name ());
+        public DiagnosticRelatedInformation.from_variant (Variant variant) throws UriError,
+        DeserializeError {
+            location = Location.from_variant (expect_property (variant, "location",
+                VariantType.VARDICT, typeof (DiagnosticRelatedInformation).name ()));
+            message = (string) expect_property (variant, "message", VariantType.STRING,
+                typeof (DiagnosticRelatedInformation).name ());
         }
 
         public Variant to_variant () {
@@ -229,9 +234,11 @@ namespace Lsp {
         public Diagnostic.from_variant (Variant variant) throws DeserializeError, UriError {
             Variant? prop = null;
 
-            range = Range.from_variant (expect_property (variant, "range", VariantType.VARDICT, "LspDiagnostic"));
+            range = Range.from_variant (expect_property (variant, "range", VariantType.VARDICT,
+                "LspDiagnostic"));
 
-            if ((prop = lookup_property (variant, "severity", VariantType.INT64, "LspDiagnostic")) != null) {
+            if ((prop = lookup_property (variant, "severity", VariantType.INT64,
+                "LspDiagnostic")) != null) {
                 var value = (int64) prop;
                 if (value < (int64) DiagnosticSeverity.ERROR ||
                     value > (int64) DiagnosticSeverity.HINT)
@@ -245,18 +252,23 @@ namespace Lsp {
                 else if (prop.is_of_type (VariantType.STRING))
                     code = (string) prop;
                 else
-                    throw new DeserializeError.INVALID_TYPE ("LspDiagnostic.code must be an int64 or a string");
+                    throw new DeserializeError.INVALID_TYPE (
+                        "LspDiagnostic.code must be an int64 or a string");
             }
 
-            if ((prop = lookup_property (variant, "codeDescription", VariantType.VARDICT, "LspDiagnostic")) != null)
+            if ((prop = lookup_property (variant, "codeDescription", VariantType.VARDICT,
+                "LspDiagnostic")) != null)
                 code_description = new CodeDescription.from_variant (prop);
 
-            if ((prop = lookup_property (variant, "source", VariantType.STRING, "LspDiagnostic")) != null)
+            if ((prop = lookup_property (variant, "source", VariantType.STRING,
+                "LspDiagnostic")) != null)
                 source = (string) prop;
 
-            message = (string) expect_property (variant, "message", VariantType.STRING, "LspDiagnostic");
+            message = (string) expect_property (variant, "message", VariantType.STRING,
+                "LspDiagnostic");
 
-            if ((prop = lookup_property (variant, "tags", VariantType.ARRAY, "LspDiagnostic")) != null) {
+            if ((prop = lookup_property (variant, "tags", VariantType.ARRAY,
+                "LspDiagnostic")) != null) {
                 DiagnosticTag[] diag_tags = {};
                 foreach (var tag in prop) {
                     var tag_value = expect_array_element (
@@ -269,7 +281,8 @@ namespace Lsp {
                 tags = diag_tags;
             }
 
-            if ((prop = lookup_property (variant, "relatedInformation", VariantType.ARRAY, "LspDiagnostic")) != null) {
+            if ((prop = lookup_property (variant, "relatedInformation", VariantType.ARRAY,
+                "LspDiagnostic")) != null) {
                 DiagnosticRelatedInformation[] related_info = {};
                 foreach (var related in prop) {
                     related_info += DiagnosticRelatedInformation.from_variant (

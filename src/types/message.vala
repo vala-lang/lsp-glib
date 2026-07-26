@@ -61,9 +61,10 @@ namespace Lsp {
             Variant? prop = null;
 
             if ((prop = dict.lookup_value ("title", VariantType.STRING)) != null)
-                this.title = (string)prop;
+                this.title = (string) prop;
             else
-                throw new DeserializeError.MISSING_PROPERTY ("property `title` not found for MessageActionItem");
+                throw new DeserializeError.MISSING_PROPERTY (
+                    "property `title` not found for MessageActionItem");
         }
 
         public Variant to_variant () {

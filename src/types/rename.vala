@@ -38,16 +38,20 @@ namespace Lsp {
          */
         public string new_name { get; set; }
 
-        public RenameParams (TextDocumentIdentifier text_document, Position position, string new_name) {
+        public RenameParams (TextDocumentIdentifier text_document, Position position,
+                             string new_name) {
             this.text_document = text_document;
             this.position = position;
             this.new_name = new_name;
         }
 
         public RenameParams.from_variant (Variant dict) throws DeserializeError, UriError {
-            text_document = TextDocumentIdentifier.from_variant (expect_property (dict, "textDocument", VariantType.VARDICT, "RenameParams"));
-            position = Position.from_variant (expect_property (dict, "position", VariantType.VARDICT, "RenameParams"));
-            new_name = (string) expect_property (dict, "newName", VariantType.STRING, "RenameParams");
+            text_document = TextDocumentIdentifier.from_variant (expect_property (dict,
+                "textDocument", VariantType.VARDICT, "RenameParams"));
+            position = Position.from_variant (expect_property (dict, "position",
+                VariantType.VARDICT, "RenameParams"));
+            new_name = (string) expect_property (dict, "newName", VariantType.STRING,
+                "RenameParams");
         }
 
         public Variant to_variant () {
@@ -79,8 +83,10 @@ namespace Lsp {
         }
 
         public PrepareRenameParams.from_variant (Variant dict) throws DeserializeError, UriError {
-            text_document = TextDocumentIdentifier.from_variant (expect_property (dict, "textDocument", VariantType.VARDICT, "PrepareRenameParams"));
-            position = Position.from_variant (expect_property (dict, "position", VariantType.VARDICT, "PrepareRenameParams"));
+            text_document = TextDocumentIdentifier.from_variant (expect_property (dict,
+                "textDocument", VariantType.VARDICT, "PrepareRenameParams"));
+            position = Position.from_variant (expect_property (dict, "position",
+                VariantType.VARDICT, "PrepareRenameParams"));
         }
 
         public Variant to_variant () {

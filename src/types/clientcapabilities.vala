@@ -99,11 +99,12 @@ namespace Lsp {
 
     /**
      * Defines what workspace resource operations the client supports.
-     * 
+     *
      * @see WorkspaceEditClientCaps.resource_ops
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_workspace_edit_client_caps_ref", unref_function = "lsp_workspace_edit_client_caps_unref")]
+    [CCode (ref_function = "lsp_workspace_edit_client_caps_ref",
+        unref_function = "lsp_workspace_edit_client_caps_unref")]
     public class WorkspaceEditClientCaps {
         private int ref_count = 1;
 
@@ -172,7 +173,7 @@ namespace Lsp {
             Variant? prop;
 
             if ((prop = dict.lookup_value ("documentChanges", VariantType.BOOLEAN)) != null)
-                document_changes = (bool)prop;
+                document_changes = (bool) prop;
 
             if ((prop = dict.lookup_value ("resourceOperations", VariantType.ARRAY)) != null) {
                 resource_ops = string_array_from_variant (
@@ -182,18 +183,19 @@ namespace Lsp {
 
             if ((prop = dict.lookup_value ("failureHandling", VariantType.STRING)) != null) {
                 FailureHandlingKind fh;
-                if (FailureHandlingKind.UNSET.try_parse ((string)prop, out fh))
+                if (FailureHandlingKind.UNSET.try_parse ((string) prop, out fh))
                     failure_handling = fh;
             }
 
             if ((prop = dict.lookup_value ("normalizesLineEndings", VariantType.BOOLEAN)) != null)
-                normalizes_line_endings = (bool)prop;
+                normalizes_line_endings = (bool) prop;
 
-            if ((prop = dict.lookup_value ("changeAnnotationSupport", VariantType.VARDICT)) != null) {
+            if ((prop = dict.lookup_value ("changeAnnotationSupport",
+                VariantType.VARDICT)) != null) {
                 change_annotations = true;
                 Variant? ca_prop;
                 if ((ca_prop = prop.lookup_value ("groupsOnLabel", VariantType.BOOLEAN)) != null)
-                    change_annotations_group_on_label = (bool)ca_prop;
+                    change_annotations_group_on_label = (bool) ca_prop;
             }
         }
 
@@ -206,7 +208,8 @@ namespace Lsp {
                 Variant[] ops = {};
                 foreach (unowned var op in resource_ops)
                     ops += op;
-                dict.insert_value ("resourceOperations", new Variant.array (VariantType.STRING, ops));
+                dict.insert_value ("resourceOperations",
+                    new Variant.array (VariantType.STRING, ops));
             }
             if (failure_handling != FailureHandlingKind.UNSET)
                 dict.insert_value ("failureHandling", failure_handling.to_string ());
@@ -227,7 +230,8 @@ namespace Lsp {
      * Workspace-specific client capabilities.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_workspace_client_caps_ref", unref_function = "lsp_workspace_client_caps_unref")]
+    [CCode (ref_function = "lsp_workspace_client_caps_ref",
+        unref_function = "lsp_workspace_client_caps_unref")]
     public class WorkspaceClientCaps {
         private int ref_count = 1;
 
@@ -260,7 +264,7 @@ namespace Lsp {
             Variant? prop;
 
             if ((prop = dict.lookup_value ("applyEdit", VariantType.BOOLEAN)) != null)
-                apply_edit = (bool)prop;
+                apply_edit = (bool) prop;
 
             if ((prop = dict.lookup_value ("workspaceEdit", VariantType.VARDICT)) != null)
                 workspace_edit = new WorkspaceEditClientCaps.from_variant (prop);
@@ -282,7 +286,8 @@ namespace Lsp {
      * Completion-specific client capabilities
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_completion_client_caps_ref", unref_function = "lsp_completion_client_caps_unref")]
+    [CCode (ref_function = "lsp_completion_client_caps_ref",
+        unref_function = "lsp_completion_client_caps_unref")]
     public class CompletionClientCaps {
         private int ref_count = 1;
 
@@ -300,7 +305,7 @@ namespace Lsp {
 
         /**
          * Client supports snippets as insert text.
-		 *
+         *
          * A snippet can define tab stops and placeholders with `$1`, `$2` and
          * `${3:foo}`. `$0` defines the final tab stop, it defaults to the end
          * of the snippet. Placeholders with equal identifiers are linked, that
@@ -346,7 +351,7 @@ namespace Lsp {
         /**
          * Client supports insert replace edit to control different behavior if
          * a completion item is inserted in the text or should replace text.
-		 *
+         *
          * @since 3.16.0
          */
         public bool insert_replace { get; set; }
@@ -355,7 +360,7 @@ namespace Lsp {
          * Indicates which properties a client can resolve lazily on a
          * completion item. Before version 3.16.0 only the predefined
          * properties `documentation` and `detail` could be resolved lazily.
-		 *
+         *
          * @since 3.16.0
          */
         public string[]? resolve_properties { get; set; }
@@ -364,7 +369,7 @@ namespace Lsp {
          * The client supports the `insertTextMode` property on a completion
          * item to override the whitespace handling mode as defined by the
          * client (see `insertTextMode`).
-		 *
+         *
          * @since 3.16.0
          */
         public InsertTextMode[]? insert_text_modes { get; set; }
@@ -374,7 +379,7 @@ namespace Lsp {
          * property exists the client also guarantees that it will handle
          * values outside its set gracefully and falls back to a default value
          * when unknown.
-		 *
+         *
          * If this property is not present the client only supports the
          * completion items kinds from `Text` to `Reference` as defined in the
          * initial version of the protocol.
@@ -402,26 +407,29 @@ namespace Lsp {
                 item_caps = prop;
 
             if ((prop = item_caps.lookup_value ("snippetSupport", VariantType.BOOLEAN)) != null)
-                snippets = (bool)prop;
+                snippets = (bool) prop;
             else if ((prop = item_caps.lookup_value ("snippet", VariantType.BOOLEAN)) != null)
-                snippets = (bool)prop;
+                snippets = (bool) prop;
 
-            if ((prop = item_caps.lookup_value ("commitCharactersSupport", VariantType.BOOLEAN)) != null)
-                commit_chars = (bool)prop;
+            if ((prop = item_caps.lookup_value ("commitCharactersSupport",
+                VariantType.BOOLEAN)) != null)
+                commit_chars = (bool) prop;
 
             if ((prop = item_caps.lookup_value ("deprecatedSupport", VariantType.BOOLEAN)) != null)
-                deprecated_property = (bool)prop;
+                deprecated_property = (bool) prop;
 
             if ((prop = item_caps.lookup_value ("preselectSupport", VariantType.BOOLEAN)) != null)
-                preselect_property = (bool)prop;
+                preselect_property = (bool) prop;
 
-            if ((prop = item_caps.lookup_value ("insertReplaceSupport", VariantType.BOOLEAN)) != null)
-                insert_replace = (bool)prop;
+            if ((prop = item_caps.lookup_value ("insertReplaceSupport",
+                VariantType.BOOLEAN)) != null)
+                insert_replace = (bool) prop;
 
             if ((prop = dict.lookup_value ("contextSupport", VariantType.BOOLEAN)) != null)
-                context = (bool)prop;
+                context = (bool) prop;
 
-            if ((prop = item_caps.lookup_value ("labelDetailsSupport", VariantType.BOOLEAN)) != null)
+            if ((prop = item_caps.lookup_value ("labelDetailsSupport",
+                VariantType.BOOLEAN)) != null)
                 label_details = (bool) prop;
 
             if ((prop = item_caps.lookup_value ("resolveSupport", VariantType.VARDICT)) != null) {
@@ -433,7 +441,8 @@ namespace Lsp {
                 }
             }
 
-            if ((prop = item_caps.lookup_value ("documentationFormat", VariantType.ARRAY)) != null) {
+            if ((prop = item_caps.lookup_value ("documentationFormat",
+                VariantType.ARRAY)) != null) {
                 MarkupKind[] formats = {};
                 foreach (var f in prop) {
                     var format = unwrap_variant (f);
@@ -468,7 +477,8 @@ namespace Lsp {
                 }
             }
 
-            if ((prop = item_caps.lookup_value ("insertTextModeSupport", VariantType.VARDICT)) != null) {
+            if ((prop = item_caps.lookup_value ("insertTextModeSupport",
+                VariantType.VARDICT)) != null) {
                 var values = prop.lookup_value ("valueSet", VariantType.ARRAY);
                 if (values != null) {
                     InsertTextMode[] modes = {};
@@ -609,7 +619,8 @@ namespace Lsp {
      * Text document-specific client capabilities.
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_text_document_client_caps_ref", unref_function = "lsp_text_document_client_caps_unref")]
+    [CCode (ref_function = "lsp_text_document_client_caps_ref",
+        unref_function = "lsp_text_document_client_caps_unref")]
     public class TextDocumentClientCaps {
         private int ref_count = 1;
 
@@ -639,11 +650,14 @@ namespace Lsp {
             if ((prop = dict.lookup_value ("synchronization", VariantType.VARDICT)) != null) {
                 var sync_flags = TextDocumentSyncClientCaps.NONE;
                 Variant? sync_prop;
-                if ((sync_prop = prop.lookup_value ("willSave", VariantType.BOOLEAN)) != null && (bool)sync_prop)
+                if ((sync_prop = prop.lookup_value ("willSave",
+                    VariantType.BOOLEAN)) != null && (bool) sync_prop)
                     sync_flags |= TextDocumentSyncClientCaps.WILL_SAVE;
-                if ((sync_prop = prop.lookup_value ("willSaveWaitUntil", VariantType.BOOLEAN)) != null && (bool)sync_prop)
+                if ((sync_prop = prop.lookup_value ("willSaveWaitUntil",
+                    VariantType.BOOLEAN)) != null && (bool) sync_prop)
                     sync_flags |= TextDocumentSyncClientCaps.WILL_SAVE_WAIT_UNTIL;
-                if ((sync_prop = prop.lookup_value ("didSave", VariantType.BOOLEAN)) != null && (bool)sync_prop)
+                if ((sync_prop = prop.lookup_value ("didSave",
+                    VariantType.BOOLEAN)) != null && (bool) sync_prop)
                     sync_flags |= TextDocumentSyncClientCaps.DID_SAVE;
                 synchronization = sync_flags;
             }
@@ -696,12 +710,12 @@ namespace Lsp {
         /**
          * Workspace-specific client capabilities.
          */
-        public WorkspaceClientCaps workspace { get; set; }
+        public WorkspaceClientCaps? workspace { get; set; }
 
         /**
          * Text document-specific client capabilities.
          */
-        public TextDocumentClientCaps text_document { get; set; }
+        public TextDocumentClientCaps? text_document { get; set; }
 
         public ClientCaps () {
         }

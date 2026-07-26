@@ -123,7 +123,8 @@ namespace Lsp {
          */
         public DocumentSymbol[] children { get; set; }
 
-        public DocumentSymbol (string name, SymbolKind kind, Range range, Range selection_range, string? detail = null, SymbolTag tags = SymbolTag.UNSET) {
+        public DocumentSymbol (string name, SymbolKind kind, Range range, Range selection_range,
+                               string? detail = null, SymbolTag tags = SymbolTag.UNSET) {
             this.name = name;
             this.kind = kind;
             this.range = range;
@@ -137,15 +138,20 @@ namespace Lsp {
             Variant? child_list;
 
             name = (string) expect_property (dict, "name", VariantType.STRING, "DocumentSymbol");
-            kind = (SymbolKind) (int64) expect_property (dict, "kind", VariantType.INT64, "DocumentSymbol");
+            kind = (SymbolKind) (int64) expect_property (dict, "kind", VariantType.INT64,
+                "DocumentSymbol");
 
-            if ((prop = lookup_property (dict, "detail", VariantType.STRING, "DocumentSymbol")) != null)
+            if ((prop = lookup_property (dict, "detail", VariantType.STRING,
+                "DocumentSymbol")) != null)
                 detail = (string) prop;
 
-            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT, "DocumentSymbol"));
-            selection_range = Range.from_variant (expect_property (dict, "selectionRange", VariantType.VARDICT, "DocumentSymbol"));
+            range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT,
+                "DocumentSymbol"));
+            selection_range = Range.from_variant (expect_property (dict, "selectionRange",
+                VariantType.VARDICT, "DocumentSymbol"));
 
-            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY, "DocumentSymbol")) != null) {
+            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY,
+                "DocumentSymbol")) != null) {
                 SymbolTag parsed_tags = SymbolTag.UNSET;
                 foreach (var tag_v in prop) {
                     var tag = expect_array_element (
@@ -250,7 +256,8 @@ namespace Lsp {
          */
         public Location location { get; set; }
 
-        public SymbolInformation (string name, SymbolKind kind, Location location, string? container_name = null, SymbolTag tags = SymbolTag.UNSET) {
+        public SymbolInformation (string name, SymbolKind kind, Location location,
+                                  string? container_name = null, SymbolTag tags = SymbolTag.UNSET) {
             this.name = name;
             this.kind = kind;
             this.tags = tags;
@@ -262,10 +269,13 @@ namespace Lsp {
             Variant? prop = null;
 
             name = (string) expect_property (dict, "name", VariantType.STRING, "SymbolInformation");
-            kind = (SymbolKind) (int64) expect_property (dict, "kind", VariantType.INT64, "SymbolInformation");
-            location = Location.from_variant (expect_property (dict, "location", VariantType.VARDICT, "SymbolInformation"));
+            kind = (SymbolKind) (int64) expect_property (dict, "kind", VariantType.INT64,
+                "SymbolInformation");
+            location = Location.from_variant (expect_property (dict, "location",
+                VariantType.VARDICT, "SymbolInformation"));
 
-            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY, "SymbolInformation")) != null) {
+            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY,
+                "SymbolInformation")) != null) {
                 SymbolTag parsed_tags = SymbolTag.UNSET;
                 foreach (var tag_v in prop) {
                     var tag = expect_array_element (
@@ -277,10 +287,12 @@ namespace Lsp {
                 tags = parsed_tags;
             }
 
-            if ((prop = lookup_property (dict, "deprecated", VariantType.BOOLEAN, "SymbolInformation")) != null && (bool)prop)
+            if ((prop = lookup_property (dict, "deprecated", VariantType.BOOLEAN,
+                "SymbolInformation")) != null && (bool) prop)
                 tags |= SymbolTag.DEPRECATED;
 
-            if ((prop = lookup_property (dict, "containerName", VariantType.STRING, "SymbolInformation")) != null)
+            if ((prop = lookup_property (dict, "containerName", VariantType.STRING,
+                "SymbolInformation")) != null)
                 container_name = (string) prop;
         }
 
@@ -312,7 +324,8 @@ namespace Lsp {
      * @since 3.17.0
      */
     [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_workspace_symbol_ref", unref_function = "lsp_workspace_symbol_unref")]
+    [CCode (ref_function = "lsp_workspace_symbol_ref",
+        unref_function = "lsp_workspace_symbol_unref")]
     public class WorkspaceSymbol {
         private int ref_count = 1;
 
@@ -380,7 +393,8 @@ namespace Lsp {
             Variant? prop = null;
 
             name = (string) expect_property (dict, "name", VariantType.STRING, "WorkspaceSymbol");
-            kind = (SymbolKind) (int64) expect_property (dict, "kind", VariantType.INT64, "WorkspaceSymbol");
+            kind = (SymbolKind) (int64) expect_property (dict, "kind", VariantType.INT64,
+                "WorkspaceSymbol");
             var location = expect_property (
                 dict,
                 "location",
@@ -394,13 +408,14 @@ namespace Lsp {
                     "WorkspaceSymbol.location"),
                 UriFlags.NONE);
             if ((prop = lookup_property (
-                    location,
-                    "range",
-                    VariantType.VARDICT,
-                    "WorkspaceSymbol.location")) != null)
+                location,
+                "range",
+                VariantType.VARDICT,
+                "WorkspaceSymbol.location")) != null)
                 range = Range.from_variant (prop);
 
-            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY, "WorkspaceSymbol")) != null) {
+            if ((prop = lookup_property (dict, "tags", VariantType.ARRAY,
+                "WorkspaceSymbol")) != null) {
                 SymbolTag parsed_tags = SymbolTag.UNSET;
                 foreach (var tag_v in prop) {
                     var tag = expect_array_element (
@@ -412,7 +427,8 @@ namespace Lsp {
                 tags = parsed_tags;
             }
 
-            if ((prop = lookup_property (dict, "containerName", VariantType.STRING, "WorkspaceSymbol")) != null)
+            if ((prop = lookup_property (dict, "containerName", VariantType.STRING,
+                "WorkspaceSymbol")) != null)
                 container_name = (string) prop;
         }
 

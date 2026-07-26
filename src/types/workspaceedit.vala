@@ -35,7 +35,9 @@ namespace Lsp {
      */
     public class CreateFile : ResourceOperation {
         public override unowned string kind {
-            get { return ResourceOperationKind.CREATE.to_string (); }
+            get {
+                return ResourceOperationKind.CREATE.to_string ();
+            }
         }
 
         /**
@@ -52,9 +54,11 @@ namespace Lsp {
             public static Options from_variant (Variant variant) throws DeserializeError {
                 var options = NONE;
                 Variant? prop = null;
-                if ((prop = lookup_property (variant, "overwrite", VariantType.BOOLEAN, "LspCreateFileOptions")) != null && (bool)prop)
+                if ((prop = lookup_property (variant, "overwrite", VariantType.BOOLEAN,
+                    "LspCreateFileOptions")) != null && (bool) prop)
                     options |= OVERWRITE;
-                if ((prop = lookup_property (variant, "ignoreIfExists", VariantType.BOOLEAN, "LspCreateFileOptions")) != null && (bool)prop)
+                if ((prop = lookup_property (variant, "ignoreIfExists", VariantType.BOOLEAN,
+                    "LspCreateFileOptions")) != null && (bool) prop)
                     options |= IGNORE_IF_EXISTS;
                 return options;
             }
@@ -78,11 +82,14 @@ namespace Lsp {
         }
 
         public CreateFile.from_variant (Variant variant) throws DeserializeError, UriError {
-            uri = Uri.parse ((string) expect_property (variant, "uri", VariantType.STRING, "LspCreateFile"), UriFlags.NONE);
+            uri = Uri.parse ((string) expect_property (variant, "uri", VariantType.STRING,
+                "LspCreateFile"), UriFlags.NONE);
             Variant? prop = null;
-            if ((prop = lookup_property (variant, "options", VariantType.VARDICT, "LspCreateFileOptions")) != null)
+            if ((prop = lookup_property (variant, "options", VariantType.VARDICT,
+                "LspCreateFileOptions")) != null)
                 options = Options.from_variant (prop);
-            if ((prop = lookup_property (variant, "annotationId", VariantType.STRING, "LspCreateFile")) != null)
+            if ((prop = lookup_property (variant, "annotationId", VariantType.STRING,
+                "LspCreateFile")) != null)
                 annotation_id = (string) prop;
         }
 
@@ -111,7 +118,9 @@ namespace Lsp {
      */
     public class RenameFile : ResourceOperation {
         public override unowned string kind {
-            get { return ResourceOperationKind.RENAME.to_string (); }
+            get {
+                return ResourceOperationKind.RENAME.to_string ();
+            }
         }
 
         public Uri old_uri { get; set; }
@@ -127,9 +136,11 @@ namespace Lsp {
             public static Options from_variant (Variant variant) throws DeserializeError {
                 var options = NONE;
                 Variant? prop = null;
-                if ((prop = lookup_property (variant, "overwrite", VariantType.BOOLEAN, "LspRenameFileOptions")) != null && (bool)prop)
+                if ((prop = lookup_property (variant, "overwrite", VariantType.BOOLEAN,
+                    "LspRenameFileOptions")) != null && (bool) prop)
                     options |= OVERWRITE;
-                if ((prop = lookup_property (variant, "ignoreIfExists", VariantType.BOOLEAN, "LspRenameFileOptions")) != null && (bool)prop)
+                if ((prop = lookup_property (variant, "ignoreIfExists", VariantType.BOOLEAN,
+                    "LspRenameFileOptions")) != null && (bool) prop)
                     options |= IGNORE_IF_EXISTS;
                 return options;
             }
@@ -155,12 +166,16 @@ namespace Lsp {
         }
 
         public RenameFile.from_variant (Variant variant) throws DeserializeError, UriError {
-            old_uri = Uri.parse ((string) expect_property (variant, "oldUri", VariantType.STRING, "LspRenameFile"), UriFlags.NONE);
-            new_uri = Uri.parse ((string) expect_property (variant, "newUri", VariantType.STRING, "LspRenameFile"), UriFlags.NONE);
+            old_uri = Uri.parse ((string) expect_property (variant, "oldUri", VariantType.STRING,
+                "LspRenameFile"), UriFlags.NONE);
+            new_uri = Uri.parse ((string) expect_property (variant, "newUri", VariantType.STRING,
+                "LspRenameFile"), UriFlags.NONE);
             Variant? prop = null;
-            if ((prop = lookup_property (variant, "options", VariantType.VARDICT, "LspRenameFileOptions")) != null)
+            if ((prop = lookup_property (variant, "options", VariantType.VARDICT,
+                "LspRenameFileOptions")) != null)
                 options = Options.from_variant (prop);
-            if ((prop = lookup_property (variant, "annotationId", VariantType.STRING, "LspRenameFile")) != null)
+            if ((prop = lookup_property (variant, "annotationId", VariantType.STRING,
+                "LspRenameFile")) != null)
                 annotation_id = (string) prop;
         }
 
@@ -190,7 +205,9 @@ namespace Lsp {
      */
     public class DeleteFile : ResourceOperation {
         public override unowned string kind {
-            get { return ResourceOperationKind.DELETE.to_string (); }
+            get {
+                return ResourceOperationKind.DELETE.to_string ();
+            }
         }
 
         public Uri uri { get; set; }
@@ -204,9 +221,11 @@ namespace Lsp {
             public static Options from_variant (Variant variant) throws DeserializeError {
                 var options = NONE;
                 Variant? prop = null;
-                if ((prop = lookup_property (variant, "recursive", VariantType.BOOLEAN, "LspDeleteFileOptions")) != null && (bool)prop)
+                if ((prop = lookup_property (variant, "recursive", VariantType.BOOLEAN,
+                    "LspDeleteFileOptions")) != null && (bool) prop)
                     options |= RECURSIVE;
-                if ((prop = lookup_property (variant, "ignoreIfNotExists", VariantType.BOOLEAN, "LspDeleteFileOptions")) != null && (bool)prop)
+                if ((prop = lookup_property (variant, "ignoreIfNotExists", VariantType.BOOLEAN,
+                    "LspDeleteFileOptions")) != null && (bool) prop)
                     options |= IGNORE_IF_NOT_EXISTS;
                 return options;
             }
@@ -230,11 +249,14 @@ namespace Lsp {
         }
 
         public DeleteFile.from_variant (Variant variant) throws DeserializeError, UriError {
-            uri = Uri.parse ((string) expect_property (variant, "uri", VariantType.STRING, "LspDeleteFile"), UriFlags.NONE);
+            uri = Uri.parse ((string) expect_property (variant, "uri", VariantType.STRING,
+                "LspDeleteFile"), UriFlags.NONE);
             Variant? prop = null;
-            if ((prop = lookup_property (variant, "options", VariantType.VARDICT, "LspDeleteFileOptions")) != null)
+            if ((prop = lookup_property (variant, "options", VariantType.VARDICT,
+                "LspDeleteFileOptions")) != null)
                 options = Options.from_variant (prop);
-            if ((prop = lookup_property (variant, "annotationId", VariantType.STRING, "LspDeleteFile")) != null)
+            if ((prop = lookup_property (variant, "annotationId", VariantType.STRING,
+                "LspDeleteFile")) != null)
                 annotation_id = (string) prop;
         }
 
@@ -341,7 +363,8 @@ namespace Lsp {
          * Deserialize this from a {@link GLib.Variant}
          */
         public WorkspaceEdit.from_variant (Variant variant) throws DeserializeError, UriError {
-            Variant? doc_changes = lookup_property (variant, "documentChanges", VariantType.ARRAY, "LspWorkspaceEdit");
+            Variant? doc_changes = lookup_property (variant, "documentChanges", VariantType.ARRAY,
+                "LspWorkspaceEdit");
             if (doc_changes != null) {
                 ResourceOperation[] items = {};
                 foreach (var vchange in doc_changes) {
@@ -367,12 +390,14 @@ namespace Lsp {
                     else if (kind == "rename")
                         items += new RenameFile.from_variant (change);
                     else
-                        throw new DeserializeError.UNEXPECTED_ELEMENT ("unexpected element in documentChanges array");
+                        throw new DeserializeError.UNEXPECTED_ELEMENT (
+                            "unexpected element in documentChanges array");
                 }
                 document_changes = items;
             }
 
-            Variant? annotations = lookup_property (variant, "changeAnnotations", VariantType.VARDICT, "LspWorkspaceEdit");
+            Variant? annotations = lookup_property (variant, "changeAnnotations",
+                VariantType.VARDICT, "LspWorkspaceEdit");
             if (annotations != null) {
                 var map = new HashTable<string, ChangeAnnotation> (str_hash, str_equal);
                 VariantIter iter = annotations.iterator ();
@@ -437,8 +462,10 @@ namespace Lsp {
         }
 
         public ApplyWorkspaceEditResult.from_variant (Variant variant) throws DeserializeError {
-            applied = (bool) expect_property (variant, "applied", VariantType.BOOLEAN, "ApplyWorkspaceEditResult");
-            var prop = lookup_property (variant, "failureReason", VariantType.STRING, "ApplyWorkspaceEditResult");
+            applied = (bool) expect_property (variant, "applied", VariantType.BOOLEAN,
+                "ApplyWorkspaceEditResult");
+            var prop = lookup_property (variant, "failureReason", VariantType.STRING,
+                "ApplyWorkspaceEditResult");
             if (prop != null)
                 failure_reason = (string) prop;
             prop = variant.lookup_value ("failedChange", null);

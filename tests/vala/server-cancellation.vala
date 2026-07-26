@@ -123,17 +123,18 @@ private void run_cancellation_case (bool wait_in_context_hook) {
     server.request_waiting.connect (() => {
         var parameters = new VariantDict ();
         parameters.insert_value ("id", new Variant.int64 (1));
+        AsyncReadyCallback on_cancelled = (object, result) => {
+            try {
+                client.send_notification_async.end (result);
+            } catch (Error e) {
+                error ("failed to cancel request: %s", e.message);
+            }
+        };
         client.send_notification_async.begin (
             "$/cancelRequest",
             parameters.end (),
             null,
-            (object, result) => {
-                try {
-                    client.send_notification_async.end (result);
-                } catch (Error e) {
-                    error ("failed to cancel request: %s", e.message);
-                }
-            });
+            on_cancelled);
     });
 
     run_request.begin (client, loop);
