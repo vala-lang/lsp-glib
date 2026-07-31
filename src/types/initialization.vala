@@ -141,7 +141,7 @@ namespace Lsp {
         /**
          * The capabilities of the client / editor.
          */
-        public ClientCaps? capabilities { get; set; }
+        public ClientCaps capabilities { get; set; }
 
         /**
          * The initial trace setting. If omitted, trace is disabled ('off').
@@ -165,6 +165,7 @@ namespace Lsp {
 
         public InitializeParams (int64? process_id = null) {
             this.process_id = process_id;
+            capabilities = new ClientCaps ();
         }
 
         /**
@@ -193,6 +194,12 @@ namespace Lsp {
         public InitializeParams.from_variant (Variant dict) throws DeserializeError {
             Variant? prop = null;
 
+            capabilities = new ClientCaps.from_variant (expect_property (
+                dict,
+                "capabilities",
+                VariantType.VARDICT,
+                "InitializeParams"));
+
             if ((prop = dict.lookup_value ("processId", VariantType.INT64)) != null)
                 process_id = (int64) prop;
 
@@ -213,9 +220,6 @@ namespace Lsp {
                         "invalid rootUri in InitializeParams: %s", e.message);
                 }
             }
-
-            if ((prop = dict.lookup_value ("capabilities", VariantType.VARDICT)) != null)
-                capabilities = new ClientCaps.from_variant (prop);
 
             if ((prop = dict.lookup_value ("trace", VariantType.STRING)) != null)
                 trace = TraceValue.parse_string ((string) prop);
@@ -252,8 +256,7 @@ namespace Lsp {
                 dict.insert_value ("rootPath", root_path);
             if (root_uri != null)
                 dict.insert_value ("rootUri", root_uri.to_string ());
-            if (capabilities != null)
-                dict.insert_value ("capabilities", capabilities.to_variant ());
+            dict.insert_value ("capabilities", capabilities.to_variant ());
             if (trace != OFF)
                 dict.insert_value ("trace", trace.to_string ());
             if (workspaces != null) {

@@ -507,9 +507,12 @@ test_type_hierarchy_and_capabilities_round_trip (void)
   g_autoptr (LspTypeHierarchyItem) item = NULL;
   g_autoptr (LspTypeHierarchyItem) decoded_item = NULL;
   g_autoptr (LspDocumentSymbolClientCaps) symbol_caps = NULL;
-  g_autoptr (LspRenameClientCaps) rename_caps = NULL;
-  g_autoptr (LspTypeHierarchyClientCaps) hierarchy_caps = NULL;
+  LspWorkspaceEditClientCaps workspace_edit = { 0 };
+  LspWorkspaceEditClientCaps decoded_workspace_edit = { 0 };
+  LspWorkspaceClientCaps workspace_caps = { 0 };
+  LspWorkspaceClientCaps decoded_workspace = { 0 };
   g_autoptr (LspTextDocumentClientCaps) text_caps = NULL;
+  LspTextDocumentClientCaps *decoded_text;
   g_autoptr (LspClientCaps) client_caps = NULL;
   g_autoptr (LspClientCaps) decoded_client = NULL;
   g_autoptr (LspTypeHierarchyOptions) hierarchy_options = NULL;
@@ -554,25 +557,29 @@ test_type_hierarchy_and_capabilities_round_trip (void)
       "hierarchy-token");
 
   symbol_caps = lsp_document_symbol_client_caps_new ();
+  lsp_document_symbol_client_caps_set_flags (
+      symbol_caps,
+      LSP_DOCUMENT_SYMBOL_CLIENT_FLAGS_HIERARCHICAL_DOCUMENT_SYMBOLS);
   lsp_document_symbol_client_caps_set_symbol_kinds (
       symbol_caps,
       symbol_kinds,
       G_N_ELEMENTS (symbol_kinds));
-  lsp_document_symbol_client_caps_set_hierarchical_document_symbol_support (
-      symbol_caps,
-      TRUE);
   lsp_document_symbol_client_caps_set_supported_tags (
       symbol_caps,
       LSP_SYMBOL_TAG_DEPRECATED);
-  rename_caps = lsp_rename_client_caps_new ();
-  lsp_rename_client_caps_set_prepare_support (rename_caps, TRUE);
-  lsp_rename_client_caps_set_prepare_support_default_behavior (
-      rename_caps,
-      LSP_PREPARE_SUPPORT_DEFAULT_BEHAVIOR_IDENTIFIER);
-  hierarchy_caps = lsp_type_hierarchy_client_caps_new ();
-  lsp_type_hierarchy_client_caps_set_dynamic_registration (
-      hierarchy_caps,
-      TRUE);
+
+  lsp_workspace_edit_client_caps_init (
+      &workspace_edit,
+      LSP_WORKSPACE_EDIT_CLIENT_FLAGS_DOCUMENT_CHANGES |
+      LSP_WORKSPACE_EDIT_CLIENT_FLAGS_NORMALIZES_LINE_ENDINGS,
+      LSP_RESOURCE_OPERATION_KIND_CREATE |
+      LSP_RESOURCE_OPERATION_KIND_RENAME,
+      LSP_FAILURE_HANDLING_KIND_UNSET);
+  lsp_workspace_client_caps_init_with_workspace_edit (
+      &workspace_caps,
+      &workspace_edit,
+      LSP_WORKSPACE_CLIENT_FLAGS_APPLY_EDIT);
+
   text_caps = lsp_text_document_client_caps_new ();
   lsp_text_document_client_caps_set_synchronization (
       text_caps,
@@ -581,33 +588,54 @@ test_type_hierarchy_and_capabilities_round_trip (void)
   lsp_text_document_client_caps_set_document_symbol (
       text_caps,
       symbol_caps);
-  lsp_text_document_client_caps_set_rename (text_caps, rename_caps);
+  lsp_text_document_client_caps_set_rename (
+      text_caps,
+      LSP_RENAME_CLIENT_CAPS_SUPPORTED |
+      LSP_RENAME_CLIENT_CAPS_PREPARE_SUPPORT);
+  lsp_text_document_client_caps_set_rename_prepare_support_default_behavior (
+      text_caps,
+      LSP_PREPARE_SUPPORT_DEFAULT_BEHAVIOR_IDENTIFIER);
   lsp_text_document_client_caps_set_type_hierarchy (
       text_caps,
-      hierarchy_caps);
+      LSP_TYPE_HIERARCHY_CLIENT_CAPS_SUPPORTED |
+      LSP_TYPE_HIERARCHY_CLIENT_CAPS_DYNAMIC_REGISTRATION);
   client_caps = lsp_client_caps_new ();
+  lsp_client_caps_set_workspace (client_caps, &workspace_caps);
   lsp_client_caps_set_text_document (client_caps, text_caps);
   g_clear_pointer (&wire, g_variant_unref);
   wire = lsp_client_caps_to_variant (client_caps);
   decoded_client = lsp_client_caps_new_from_variant (wire, &error);
 
   g_assert_no_error (error);
+  lsp_client_caps_get_workspace (decoded_client, &decoded_workspace);
+  lsp_workspace_client_caps_get_workspace_edit (
+      &decoded_workspace,
+      &decoded_workspace_edit);
+  g_assert_true (
+      LSP_WORKSPACE_CLIENT_FLAGS_APPLY_EDIT &
+      lsp_workspace_client_caps_get_flags (&decoded_workspace));
+  g_assert_true (
+      LSP_RESOURCE_OPERATION_KIND_CREATE &
+      lsp_workspace_edit_client_caps_get_resource_ops (
+          &decoded_workspace_edit));
+  decoded_text = lsp_client_caps_get_text_document (decoded_client);
+  g_assert_nonnull (decoded_text);
   g_assert_true (
       LSP_TEXT_DOCUMENT_SYNC_CLIENT_CAPS_WILL_SAVE &
       lsp_text_document_client_caps_get_synchronization (
-          lsp_client_caps_get_text_document (decoded_client)));
+          decoded_text));
   g_assert_true (
-      lsp_document_symbol_client_caps_get_hierarchical_document_symbol_support (
+      LSP_DOCUMENT_SYMBOL_CLIENT_FLAGS_HIERARCHICAL_DOCUMENT_SYMBOLS &
+      lsp_document_symbol_client_caps_get_flags (
           lsp_text_document_client_caps_get_document_symbol (
-              lsp_client_caps_get_text_document (decoded_client))));
+              decoded_text)));
   g_assert_true (
-      lsp_rename_client_caps_get_prepare_support (
-          lsp_text_document_client_caps_get_rename (
-              lsp_client_caps_get_text_document (decoded_client))));
+      LSP_RENAME_CLIENT_CAPS_PREPARE_SUPPORT &
+      lsp_text_document_client_caps_get_rename (decoded_text));
   g_assert_true (
-      lsp_type_hierarchy_client_caps_get_dynamic_registration (
-          lsp_text_document_client_caps_get_type_hierarchy (
-              lsp_client_caps_get_text_document (decoded_client))));
+      LSP_TYPE_HIERARCHY_CLIENT_CAPS_DYNAMIC_REGISTRATION &
+      lsp_text_document_client_caps_get_type_hierarchy (
+          decoded_text));
 
   hierarchy_options = lsp_type_hierarchy_options_new ();
   server_caps = lsp_server_caps_new ();

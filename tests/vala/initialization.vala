@@ -127,7 +127,6 @@ private void test_initialize_params_round_trip () {
         assert (decoded.root_path == "/workspace");
         assert (decoded.root_uri != null);
         assert (decoded.root_uri.to_string () == "file:///workspace");
-        assert (decoded.capabilities != null);
         assert (decoded.trace == TraceValue.MESSAGES);
         assert (decoded.workspaces != null);
         assert (decoded.workspaces.length == 2);

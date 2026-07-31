@@ -290,47 +290,82 @@ class TypedSerializationTest(unittest.TestCase):
 
     def test_vls_capabilities_and_error_codes(self) -> None:
         symbol_caps = Lsp.DocumentSymbolClientCaps.new()
-        symbol_caps.set_dynamic_registration(True)
+        symbol_caps.set_flags(
+            Lsp.DocumentSymbolClientFlags.DYNAMIC_REGISTRATION
+            | Lsp.DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS
+            | Lsp.DocumentSymbolClientFlags.LABEL
+        )
         symbol_caps.set_symbol_kinds(
             [Lsp.SymbolKind.CLASS, Lsp.SymbolKind.METHOD]
         )
-        symbol_caps.set_hierarchical_document_symbol_support(True)
         symbol_caps.set_supported_tags(Lsp.SymbolTag.DEPRECATED)
-        symbol_caps.set_label_support(True)
 
-        rename_caps = Lsp.RenameClientCaps.new()
-        rename_caps.set_prepare_support(True)
-        rename_caps.set_prepare_support_default_behavior(
-            Lsp.PrepareSupportDefaultBehavior.IDENTIFIER
+        workspace_edit = Lsp.WorkspaceEditClientCaps()
+        workspace_edit.init(
+            Lsp.WorkspaceEditClientFlags.DOCUMENT_CHANGES
+            | Lsp.WorkspaceEditClientFlags.NORMALIZES_LINE_ENDINGS,
+            Lsp.ResourceOperationKind.CREATE
+            | Lsp.ResourceOperationKind.RENAME,
+            Lsp.FailureHandlingKind.UNSET,
         )
-        rename_caps.set_honors_change_annotations(True)
+        workspace_caps = Lsp.WorkspaceClientCaps()
+        workspace_caps.init_with_workspace_edit(
+            workspace_edit,
+            Lsp.WorkspaceClientFlags.APPLY_EDIT,
+        )
 
-        hierarchy_caps = Lsp.TypeHierarchyClientCaps.new()
-        hierarchy_caps.set_dynamic_registration(True)
         text_caps = Lsp.TextDocumentClientCaps.new()
         text_caps.set_synchronization(
             Lsp.TextDocumentSyncClientCaps.WILL_SAVE
-            | Lsp.TextDocumentSyncClientCaps.DID_SAVE
+            | Lsp.TextDocumentSyncClientCaps.DID_SAVE,
         )
         text_caps.set_document_symbol(symbol_caps)
-        text_caps.set_rename(rename_caps)
-        text_caps.set_type_hierarchy(hierarchy_caps)
+        text_caps.set_rename(
+            Lsp.RenameClientCaps.SUPPORTED
+            | Lsp.RenameClientCaps.PREPARE_SUPPORT
+            | Lsp.RenameClientCaps.HONORS_CHANGE_ANNOTATIONS,
+        )
+        text_caps.set_rename_prepare_support_default_behavior(
+            Lsp.PrepareSupportDefaultBehavior.IDENTIFIER,
+        )
+        text_caps.set_type_hierarchy(
+            Lsp.TypeHierarchyClientCaps.SUPPORTED
+            | Lsp.TypeHierarchyClientCaps.DYNAMIC_REGISTRATION,
+        )
         client_caps = Lsp.ClientCaps.new()
+        client_caps.set_workspace(workspace_caps)
         client_caps.set_text_document(text_caps)
 
         decoded_client = Lsp.ClientCaps.from_variant(client_caps.to_variant())
+        decoded_workspace = decoded_client.get_workspace()
+        self.assertTrue(
+            decoded_workspace.get_flags()
+            & Lsp.WorkspaceClientFlags.APPLY_EDIT
+        )
+        self.assertTrue(
+            decoded_workspace.get_workspace_edit().get_resource_ops()
+            & Lsp.ResourceOperationKind.CREATE
+        )
         decoded_text = decoded_client.get_text_document()
         self.assertTrue(
             decoded_text.get_synchronization()
             & Lsp.TextDocumentSyncClientCaps.WILL_SAVE
         )
         self.assertTrue(
-            decoded_text.get_document_symbol()
-            .get_hierarchical_document_symbol_support()
+            decoded_text.get_document_symbol().get_flags()
+            & Lsp.DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS
         )
-        self.assertTrue(decoded_text.get_rename().get_prepare_support())
         self.assertTrue(
-            decoded_text.get_type_hierarchy().get_dynamic_registration()
+            decoded_text.get_rename()
+            & Lsp.RenameClientCaps.PREPARE_SUPPORT
+        )
+        self.assertEqual(
+            decoded_text.get_rename_prepare_support_default_behavior(),
+            Lsp.PrepareSupportDefaultBehavior.IDENTIFIER,
+        )
+        self.assertTrue(
+            decoded_text.get_type_hierarchy()
+            & Lsp.TypeHierarchyClientCaps.DYNAMIC_REGISTRATION
         )
 
         server_caps = Lsp.ServerCaps.new()

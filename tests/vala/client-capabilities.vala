@@ -9,29 +9,28 @@ using Lsp;
 
 private void test_client_capabilities_round_trip () {
     try {
-        var workspace_edit = new WorkspaceEditClientCaps () {
-            document_changes = true,
-            resource_ops = {
-                ResourceOperationKind.CREATE.to_string (),
-                ResourceOperationKind.RENAME.to_string (),
-                ResourceOperationKind.DELETE.to_string ()
-            },
-            failure_handling = FailureHandlingKind.TRANSACTIONAL,
-            normalizes_line_endings = true,
-            change_annotations = true,
-            change_annotations_group_on_label = true
-        };
+        var workspace_edit = WorkspaceEditClientCaps ();
+        workspace_edit.flags = WorkspaceEditClientFlags.DOCUMENT_CHANGES |
+            WorkspaceEditClientFlags.NORMALIZES_LINE_ENDINGS |
+            WorkspaceEditClientFlags.CHANGE_ANNOTATIONS |
+            WorkspaceEditClientFlags.CHANGE_ANNOTATIONS_GROUP_ON_LABEL;
+        workspace_edit.resource_ops = ResourceOperationKind.CREATE |
+            ResourceOperationKind.RENAME |
+            ResourceOperationKind.DELETE;
+        workspace_edit.failure_handling = FailureHandlingKind.TRANSACTIONAL;
         var completion = new CompletionClientCaps () {
-            snippets = true,
-            commit_chars = true,
+            flags = CompletionClientFlags.SNIPPETS |
+                CompletionClientFlags.COMMIT_CHARACTERS |
+                CompletionClientFlags.DEPRECATED_PROPERTY |
+                CompletionClientFlags.PRESELECT_PROPERTY |
+                CompletionClientFlags.INSERT_REPLACE |
+                CompletionClientFlags.CONTEXT |
+                CompletionClientFlags.LABEL_DETAILS,
             documentation_formats = {
                 MarkupKind.MARKDOWN,
                 MarkupKind.PLAINTEXT
             },
-            deprecated_property = true,
-            preselect_property = true,
             supported_tags = CompletionItemTag.DEPRECATED,
-            insert_replace = true,
             resolve_properties = { "documentation", "detail" },
             insert_text_modes = {
                 InsertTextMode.AS_IS,
@@ -41,65 +40,62 @@ private void test_client_capabilities_round_trip () {
                 CompletionItemKind.TEXT,
                 CompletionItemKind.FUNCTION,
                 CompletionItemKind.TYPE_PARAMETER
-            },
-            context = true,
-            label_details = true
-        };
-        var original = new ClientCaps () {
-            workspace = new WorkspaceClientCaps () {
-                apply_edit = true,
-                workspace_edit = workspace_edit
-            },
-            text_document = new TextDocumentClientCaps () {
-                synchronization =
-                    TextDocumentSyncClientCaps.WILL_SAVE |
-                    TextDocumentSyncClientCaps.WILL_SAVE_WAIT_UNTIL |
-                    TextDocumentSyncClientCaps.DID_SAVE,
-                completion = completion
             }
         };
+        var workspace = WorkspaceClientCaps ();
+        workspace.flags = WorkspaceClientFlags.APPLY_EDIT;
+        workspace.workspace_edit = workspace_edit;
+        var text_document = new TextDocumentClientCaps ();
+        text_document.synchronization =
+            TextDocumentSyncClientCaps.WILL_SAVE |
+            TextDocumentSyncClientCaps.WILL_SAVE_WAIT_UNTIL |
+            TextDocumentSyncClientCaps.DID_SAVE;
+        text_document.completion = completion;
+        var original = new ClientCaps ();
+        original.workspace = workspace;
+        original.text_document = text_document;
 
         var decoded = new ClientCaps.from_variant (
             original.to_variant ());
-        assert (decoded.workspace != null);
-        assert (decoded.workspace.apply_edit);
-        assert (decoded.workspace.workspace_edit != null);
+        assert (WorkspaceClientFlags.APPLY_EDIT in decoded.workspace.flags);
         var decoded_edit = decoded.workspace.workspace_edit;
-        assert (decoded_edit.document_changes);
-        assert (decoded_edit.resource_ops != null);
-        assert (decoded_edit.resource_ops.length == 3);
+        assert (WorkspaceEditClientFlags.DOCUMENT_CHANGES in decoded_edit.flags);
+        assert (ResourceOperationKind.CREATE in decoded_edit.resource_ops);
+        assert (ResourceOperationKind.RENAME in decoded_edit.resource_ops);
+        assert (ResourceOperationKind.DELETE in decoded_edit.resource_ops);
         assert (
             decoded_edit.failure_handling ==
             FailureHandlingKind.TRANSACTIONAL);
-        assert (decoded_edit.normalizes_line_endings);
-        assert (decoded_edit.change_annotations);
-        assert (decoded_edit.change_annotations_group_on_label);
+        assert (WorkspaceEditClientFlags.NORMALIZES_LINE_ENDINGS in decoded_edit.flags);
+        assert (WorkspaceEditClientFlags.CHANGE_ANNOTATIONS in decoded_edit.flags);
+        assert (WorkspaceEditClientFlags.CHANGE_ANNOTATIONS_GROUP_ON_LABEL in
+            decoded_edit.flags);
 
         assert (decoded.text_document != null);
-        assert (
-            TextDocumentSyncClientCaps.WILL_SAVE in
-            decoded.text_document.synchronization);
+        var decoded_text_document = (!) decoded.text_document;
+        assert (TextDocumentSyncClientCaps.WILL_SAVE in
+            decoded_text_document.synchronization);
         assert (
             TextDocumentSyncClientCaps.WILL_SAVE_WAIT_UNTIL in
-            decoded.text_document.synchronization);
+            decoded_text_document.synchronization);
         assert (
             TextDocumentSyncClientCaps.DID_SAVE in
-            decoded.text_document.synchronization);
-        assert (decoded.text_document.completion != null);
-        var decoded_completion = decoded.text_document.completion;
-        assert (decoded_completion.snippets);
-        assert (decoded_completion.commit_chars);
+            decoded_text_document.synchronization);
+        assert (decoded_text_document.completion != null);
+        var decoded_completion = (!) decoded_text_document.completion;
+        assert (CompletionClientFlags.SNIPPETS in decoded_completion.flags);
+        assert (CompletionClientFlags.COMMIT_CHARACTERS in decoded_completion.flags);
         assert (decoded_completion.documentation_formats != null);
         assert (decoded_completion.documentation_formats.length == 2);
         assert (
             decoded_completion.documentation_formats[0] ==
             MarkupKind.MARKDOWN);
-        assert (decoded_completion.deprecated_property);
-        assert (decoded_completion.preselect_property);
+        assert (CompletionClientFlags.DEPRECATED_PROPERTY in decoded_completion.flags);
+        assert (CompletionClientFlags.PRESELECT_PROPERTY in decoded_completion.flags);
         assert (
             CompletionItemTag.DEPRECATED in
             decoded_completion.supported_tags);
-        assert (decoded_completion.insert_replace);
+        assert (CompletionClientFlags.INSERT_REPLACE in decoded_completion.flags);
         assert (decoded_completion.resolve_properties != null);
         assert (decoded_completion.resolve_properties.length == 2);
         assert (decoded_completion.insert_text_modes != null);
@@ -112,8 +108,8 @@ private void test_client_capabilities_round_trip () {
         assert (
             decoded_completion.item_kinds[2] ==
             CompletionItemKind.TYPE_PARAMETER);
-        assert (decoded_completion.context);
-        assert (decoded_completion.label_details);
+        assert (CompletionClientFlags.CONTEXT in decoded_completion.flags);
+        assert (CompletionClientFlags.LABEL_DETAILS in decoded_completion.flags);
     } catch (DeserializeError e) {
         error ("client capabilities round trip failed: %s", e.message);
     }
@@ -121,15 +117,14 @@ private void test_client_capabilities_round_trip () {
 
 private void test_failure_handling_default () {
     try {
-        var unset = new WorkspaceEditClientCaps ();
+        var unset = WorkspaceEditClientCaps ();
         assert (
             unset.to_variant ().lookup_value (
                 "failureHandling",
                 VariantType.STRING) == null);
 
-        var abort = new WorkspaceEditClientCaps () {
-            failure_handling = FailureHandlingKind.ABORT
-        };
+        var abort = WorkspaceEditClientCaps ();
+        abort.failure_handling = FailureHandlingKind.ABORT;
         var encoded = abort.to_variant ();
         var value = encoded.lookup_value (
             "failureHandling",
@@ -137,10 +132,33 @@ private void test_failure_handling_default () {
         assert (value != null);
         assert ((string) value == "abort");
 
-        var decoded = new WorkspaceEditClientCaps.from_variant (encoded);
+        var decoded = WorkspaceEditClientCaps.from_variant (encoded);
         assert (decoded.failure_handling == FailureHandlingKind.ABORT);
     } catch (DeserializeError e) {
         error ("failure handling round trip failed: %s", e.message);
+    }
+}
+
+private void test_flag_only_capability_presence () {
+    try {
+        var text_caps = new TextDocumentClientCaps ();
+        text_caps.rename = RenameClientCaps.SUPPORTED;
+        text_caps.type_hierarchy = TypeHierarchyClientCaps.SUPPORTED;
+        var original = new ClientCaps ();
+        original.text_document = text_caps;
+        var encoded = original.to_variant ();
+        var text_document = encoded.lookup_value ("textDocument", VariantType.VARDICT);
+        assert (text_document != null);
+        assert (text_document.lookup_value ("rename", VariantType.VARDICT) != null);
+        assert (text_document.lookup_value ("typeHierarchy", VariantType.VARDICT) != null);
+
+        var decoded = new ClientCaps.from_variant (encoded);
+        assert (decoded.text_document != null);
+        var decoded_text = (!) decoded.text_document;
+        assert (RenameClientCaps.SUPPORTED in decoded_text.rename);
+        assert (TypeHierarchyClientCaps.SUPPORTED in decoded_text.type_hierarchy);
+    } catch (DeserializeError e) {
+        error ("flag-only capability round trip failed: %s", e.message);
     }
 }
 
@@ -152,5 +170,8 @@ private int main (string[] args) {
     Test.add_func (
         "/serialization/client-capabilities/failure-handling-default",
         test_failure_handling_default);
+    Test.add_func (
+        "/serialization/client-capabilities/flag-only-presence",
+        test_flag_only_capability_presence);
     return Test.run ();
 }

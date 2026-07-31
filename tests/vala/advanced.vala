@@ -386,48 +386,44 @@ private void test_type_hierarchy_and_capabilities () {
         assert (decoded_item.data != null);
         assert ((string) decoded_item.data == "hierarchy-token");
 
-        var text_document = new TextDocumentClientCaps () {
-            synchronization = TextDocumentSyncClientCaps.WILL_SAVE |
-                TextDocumentSyncClientCaps.DID_SAVE,
-            document_symbol = new DocumentSymbolClientCaps () {
-                dynamic_registration = true,
-                symbol_kinds = { SymbolKind.CLASS, SymbolKind.METHOD },
-                hierarchical_document_symbol_support = true,
-                supported_tags = SymbolTag.DEPRECATED,
-                label_support = true
-            },
-            rename = new RenameClientCaps () {
-                prepare_support = true,
-                prepare_support_default_behavior =
-                    PrepareSupportDefaultBehavior.IDENTIFIER,
-                honors_change_annotations = true
-            },
-            type_hierarchy = new TypeHierarchyClientCaps () {
-                dynamic_registration = true
-            }
+        var document_symbol = new DocumentSymbolClientCaps () {
+            flags = DocumentSymbolClientFlags.DYNAMIC_REGISTRATION |
+                DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS |
+                DocumentSymbolClientFlags.LABEL,
+            symbol_kinds = { SymbolKind.CLASS, SymbolKind.METHOD },
+            supported_tags = SymbolTag.DEPRECATED
         };
-        var decoded_client = new ClientCaps.from_variant (
-            new ClientCaps () {
-            text_document = text_document
-        }.to_variant ());
+        var text_document = new TextDocumentClientCaps ();
+        text_document.synchronization = TextDocumentSyncClientCaps.WILL_SAVE |
+            TextDocumentSyncClientCaps.DID_SAVE;
+        text_document.document_symbol = document_symbol;
+        text_document.rename = RenameClientCaps.SUPPORTED |
+            RenameClientCaps.PREPARE_SUPPORT |
+            RenameClientCaps.HONORS_CHANGE_ANNOTATIONS;
+        text_document.rename_prepare_support_default_behavior =
+            PrepareSupportDefaultBehavior.IDENTIFIER;
+        text_document.type_hierarchy = TypeHierarchyClientCaps.SUPPORTED |
+            TypeHierarchyClientCaps.DYNAMIC_REGISTRATION;
+        var client = new ClientCaps ();
+        client.text_document = text_document;
+        var decoded_client = new ClientCaps.from_variant (client.to_variant ());
         assert (decoded_client.text_document != null);
+        var decoded_text_document = (!) decoded_client.text_document;
         assert (TextDocumentSyncClientCaps.WILL_SAVE in
-            decoded_client.text_document.synchronization);
+            decoded_text_document.synchronization);
         assert (TextDocumentSyncClientCaps.DID_SAVE in
-            decoded_client.text_document.synchronization);
-        assert (decoded_client.text_document.document_symbol != null);
-        assert (decoded_client.text_document.document_symbol
-            .hierarchical_document_symbol_support);
-        assert (decoded_client.text_document.document_symbol
-            .symbol_kinds.length == 2);
-        assert (decoded_client.text_document.rename != null);
-        assert (decoded_client.text_document.rename.prepare_support);
-        assert (decoded_client.text_document.rename
-            .prepare_support_default_behavior ==
+            decoded_text_document.synchronization);
+        assert (decoded_text_document.document_symbol != null);
+        var decoded_document_symbol = (!) decoded_text_document.document_symbol;
+        assert (DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS in
+            decoded_document_symbol.flags);
+        assert (decoded_document_symbol.symbol_kinds.length == 2);
+        assert (RenameClientCaps.PREPARE_SUPPORT in
+            decoded_text_document.rename);
+        assert (decoded_text_document.rename_prepare_support_default_behavior ==
             PrepareSupportDefaultBehavior.IDENTIFIER);
-        assert (decoded_client.text_document.type_hierarchy != null);
-        assert (decoded_client.text_document.type_hierarchy
-            .dynamic_registration);
+        assert (TypeHierarchyClientCaps.DYNAMIC_REGISTRATION in
+            decoded_text_document.type_hierarchy);
 
         var decoded_server = new ServerCaps.from_variant (
             new ServerCaps () {

@@ -188,35 +188,62 @@ assertEqual(decodedHierarchyItem.get_data().deepUnpack(), 'hierarchy-token',
     'type hierarchy data did not round-trip');
 
 const symbolCaps = Lsp.DocumentSymbolClientCaps.new();
-symbolCaps.set_dynamic_registration(true);
-symbolCaps.set_symbol_kinds([Lsp.SymbolKind.CLASS, Lsp.SymbolKind.METHOD]);
-symbolCaps.set_hierarchical_document_symbol_support(true);
-symbolCaps.set_supported_tags(Lsp.SymbolTag.DEPRECATED);
-const renameCaps = Lsp.RenameClientCaps.new();
-renameCaps.set_prepare_support(true);
-renameCaps.set_prepare_support_default_behavior(
-    Lsp.PrepareSupportDefaultBehavior.IDENTIFIER,
+symbolCaps.set_flags(
+    Lsp.DocumentSymbolClientFlags.DYNAMIC_REGISTRATION |
+    Lsp.DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS,
 );
-const hierarchyCaps = Lsp.TypeHierarchyClientCaps.new();
-hierarchyCaps.set_dynamic_registration(true);
+symbolCaps.set_symbol_kinds([Lsp.SymbolKind.CLASS, Lsp.SymbolKind.METHOD]);
+symbolCaps.set_supported_tags(Lsp.SymbolTag.DEPRECATED);
+
+const workspaceEditCaps = new Lsp.WorkspaceEditClientCaps();
+workspaceEditCaps.init(
+    Lsp.WorkspaceEditClientFlags.DOCUMENT_CHANGES |
+    Lsp.WorkspaceEditClientFlags.NORMALIZES_LINE_ENDINGS,
+    Lsp.ResourceOperationKind.CREATE |
+    Lsp.ResourceOperationKind.RENAME,
+    Lsp.FailureHandlingKind.UNSET,
+);
+const workspaceCaps = new Lsp.WorkspaceClientCaps();
+workspaceCaps.init_with_workspace_edit(
+    workspaceEditCaps,
+    Lsp.WorkspaceClientFlags.APPLY_EDIT,
+);
+
 const textCaps = Lsp.TextDocumentClientCaps.new();
 textCaps.set_synchronization(
     Lsp.TextDocumentSyncClientCaps.WILL_SAVE |
     Lsp.TextDocumentSyncClientCaps.DID_SAVE,
 );
 textCaps.set_document_symbol(symbolCaps);
-textCaps.set_rename(renameCaps);
-textCaps.set_type_hierarchy(hierarchyCaps);
+textCaps.set_rename(
+    Lsp.RenameClientCaps.SUPPORTED |
+    Lsp.RenameClientCaps.PREPARE_SUPPORT,
+);
+textCaps.set_rename_prepare_support_default_behavior(
+    Lsp.PrepareSupportDefaultBehavior.IDENTIFIER,
+);
+textCaps.set_type_hierarchy(
+    Lsp.TypeHierarchyClientCaps.SUPPORTED |
+    Lsp.TypeHierarchyClientCaps.DYNAMIC_REGISTRATION,
+);
 const clientCaps = Lsp.ClientCaps.new();
+clientCaps.set_workspace(workspaceCaps);
 clientCaps.set_text_document(textCaps);
 const decodedClientCaps = Lsp.ClientCaps.from_variant(clientCaps.to_variant());
+assert(decodedClientCaps.get_workspace().get_flags() &
+    Lsp.WorkspaceClientFlags.APPLY_EDIT,
+'workspace capability did not round-trip');
+assert(decodedClientCaps.get_workspace().get_workspace_edit()
+    .get_resource_ops() & Lsp.ResourceOperationKind.CREATE,
+'workspace resource operation did not round-trip');
 assert(decodedClientCaps.get_text_document().get_document_symbol()
-    .get_hierarchical_document_symbol_support(),
+    .get_flags() & Lsp.DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS,
 'hierarchical document symbol capability did not round-trip');
-assert(decodedClientCaps.get_text_document().get_rename().get_prepare_support(),
+assert(decodedClientCaps.get_text_document().get_rename() &
+    Lsp.RenameClientCaps.PREPARE_SUPPORT,
     'prepare rename capability did not round-trip');
 assert(decodedClientCaps.get_text_document().get_type_hierarchy()
-    .get_dynamic_registration(),
+    & Lsp.TypeHierarchyClientCaps.DYNAMIC_REGISTRATION,
 'type hierarchy capability did not round-trip');
 
 const hierarchyServerCaps = Lsp.ServerCaps.new();

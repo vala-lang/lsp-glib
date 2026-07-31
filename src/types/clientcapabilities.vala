@@ -22,24 +22,29 @@ namespace Lsp {
     /**
      * The kind of resource operations supported by the client.
      */
+    [Flags]
     public enum ResourceOperationKind {
+        NONE = 0,
+
         /**
          * Supports creating new files and folders
          */
-        CREATE,
+        CREATE = 1,
 
         /**
          * Supports renaming existing files and folders.
          */
-        RENAME,
+        RENAME = 2,
 
         /**
          * Supports deleting existing files and folders.
          */
-        DELETE;
+        DELETE = 4;
 
         public unowned string to_string () {
             switch (this) {
+                case NONE:
+                    assert_not_reached ();
                 case CREATE:
                     return "create";
                 case RENAME:
@@ -49,6 +54,23 @@ namespace Lsp {
             }
 
             assert_not_reached ();
+        }
+
+        public bool try_parse (string str, out ResourceOperationKind kind) {
+            switch (str) {
+                case "create":
+                    kind = CREATE;
+                    return true;
+                case "rename":
+                    kind = RENAME;
+                    return true;
+                case "delete":
+                    kind = DELETE;
+                    return true;
+                default:
+                    kind = NONE;
+                    return false;
+            }
         }
     }
 
@@ -98,32 +120,30 @@ namespace Lsp {
     }
 
     /**
+     * Boolean workspace edit capabilities.
+     */
+    [Flags]
+    public enum WorkspaceEditClientFlags {
+        NONE = 0,
+        DOCUMENT_CHANGES = 1,
+        NORMALIZES_LINE_ENDINGS = 2,
+        CHANGE_ANNOTATIONS = 4,
+        CHANGE_ANNOTATIONS_GROUP_ON_LABEL = 8
+    }
+
+    /**
      * Defines what workspace resource operations the client supports.
      *
-     * @see WorkspaceEditClientCaps.resource_ops
+     * This is a value type because all of its capabilities fit in flags and
+     * enums. It can therefore be embedded in {@link WorkspaceClientCaps}
+     * without another allocation.
      */
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_workspace_edit_client_caps_ref",
-        unref_function = "lsp_workspace_edit_client_caps_unref")]
-    public class WorkspaceEditClientCaps {
-        private int ref_count = 1;
-
-        public unowned WorkspaceEditClientCaps ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
+    public struct WorkspaceEditClientCaps {
 
         /**
          * The client supports versioned document changes in {@link WorkspaceEdit}s
          */
-        public bool document_changes { get; set; }
+        public WorkspaceEditClientFlags flags { get; set; }
 
         /**
          * The resource operations the client supports. Clients should at least
@@ -134,7 +154,7 @@ namespace Lsp {
          * @see ResourceOperationKind
          * @since 3.13.0
          */
-        public string[]? resource_ops { get; set; }
+        public ResourceOperationKind resource_ops { get; set; }
 
         /**
          * The failure handling strategy of a client if applying the workspace
@@ -144,41 +164,34 @@ namespace Lsp {
          */
         public FailureHandlingKind failure_handling { get; set; }
 
-        /**
-         * Whether the client normalizes line endings to the client specific
-         * setting.
-         *
-         * If set to `true` the client will normalize line ending characters in
-         * a workspace edit to the client specific new line character(s).
-         *
-         * @since 3.16.0
-         */
-        public bool normalizes_line_endings { get; set; }
-
-        /**
-         * Whether the client supports change annotations.
-         *
-         * @since 3.16.0
-         */
-        public bool change_annotations { get; set; }
-
-        /**
-         * Whether the client groups edits with equal labels into tree nodes,
-         * for instance all edits labelled with "Changes in Strings" would be a
-         * tree node.
-         */
-        public bool change_annotations_group_on_label { get; set; }
+        public WorkspaceEditClientCaps (
+            WorkspaceEditClientFlags flags = WorkspaceEditClientFlags.NONE,
+            ResourceOperationKind resource_ops = ResourceOperationKind.NONE,
+            FailureHandlingKind failure_handling = FailureHandlingKind.UNSET
+        ) {
+            this.flags = flags;
+            this.resource_ops = resource_ops;
+            this.failure_handling = failure_handling;
+        }
 
         public WorkspaceEditClientCaps.from_variant (Variant dict) throws DeserializeError {
+            this ();
             Variant? prop;
 
-            if ((prop = dict.lookup_value ("documentChanges", VariantType.BOOLEAN)) != null)
-                document_changes = (bool) prop;
+            if ((prop = dict.lookup_value ("documentChanges",
+                VariantType.BOOLEAN)) != null && (bool) prop)
+                flags |= WorkspaceEditClientFlags.DOCUMENT_CHANGES;
 
             if ((prop = dict.lookup_value ("resourceOperations", VariantType.ARRAY)) != null) {
-                resource_ops = string_array_from_variant (
-                    prop,
-                    "WorkspaceEditClientCaps.resourceOperations");
+                foreach (var operation_value in prop) {
+                    var operation = expect_array_element (
+                        operation_value,
+                        VariantType.STRING,
+                        "WorkspaceEditClientCaps.resourceOperations");
+                    ResourceOperationKind kind;
+                    if (ResourceOperationKind.NONE.try_parse ((string) operation, out kind))
+                        resource_ops |= kind;
+                }
             }
 
             if ((prop = dict.lookup_value ("failureHandling", VariantType.STRING)) != null) {
@@ -187,37 +200,50 @@ namespace Lsp {
                     failure_handling = fh;
             }
 
-            if ((prop = dict.lookup_value ("normalizesLineEndings", VariantType.BOOLEAN)) != null)
-                normalizes_line_endings = (bool) prop;
+            if ((prop = dict.lookup_value ("normalizesLineEndings",
+                VariantType.BOOLEAN)) != null && (bool) prop)
+                flags |= WorkspaceEditClientFlags.NORMALIZES_LINE_ENDINGS;
 
             if ((prop = dict.lookup_value ("changeAnnotationSupport",
                 VariantType.VARDICT)) != null) {
-                change_annotations = true;
+                flags |= WorkspaceEditClientFlags.CHANGE_ANNOTATIONS;
                 Variant? ca_prop;
-                if ((ca_prop = prop.lookup_value ("groupsOnLabel", VariantType.BOOLEAN)) != null)
-                    change_annotations_group_on_label = (bool) ca_prop;
+                if ((ca_prop = prop.lookup_value ("groupsOnLabel",
+                    VariantType.BOOLEAN)) != null && (bool) ca_prop)
+                    flags |= WorkspaceEditClientFlags.CHANGE_ANNOTATIONS_GROUP_ON_LABEL;
             }
+        }
+
+        internal bool is_empty () {
+            return flags == WorkspaceEditClientFlags.NONE &&
+                   resource_ops == ResourceOperationKind.NONE &&
+                   failure_handling == FailureHandlingKind.UNSET;
         }
 
         public Variant to_variant () {
             var dict = new VariantDict ();
 
-            if (document_changes)
+            if (WorkspaceEditClientFlags.DOCUMENT_CHANGES in flags)
                 dict.insert_value ("documentChanges", true);
-            if (resource_ops != null) {
+            if (resource_ops != ResourceOperationKind.NONE) {
                 Variant[] ops = {};
-                foreach (unowned var op in resource_ops)
-                    ops += op;
+                if (ResourceOperationKind.CREATE in resource_ops)
+                    ops += ResourceOperationKind.CREATE.to_string ();
+                if (ResourceOperationKind.RENAME in resource_ops)
+                    ops += ResourceOperationKind.RENAME.to_string ();
+                if (ResourceOperationKind.DELETE in resource_ops)
+                    ops += ResourceOperationKind.DELETE.to_string ();
                 dict.insert_value ("resourceOperations",
                     new Variant.array (VariantType.STRING, ops));
             }
             if (failure_handling != FailureHandlingKind.UNSET)
                 dict.insert_value ("failureHandling", failure_handling.to_string ());
-            if (normalizes_line_endings)
+            if (WorkspaceEditClientFlags.NORMALIZES_LINE_ENDINGS in flags)
                 dict.insert_value ("normalizesLineEndings", true);
-            if (change_annotations) {
+            if (WorkspaceEditClientFlags.CHANGE_ANNOTATIONS in flags ||
+                WorkspaceEditClientFlags.CHANGE_ANNOTATIONS_GROUP_ON_LABEL in flags) {
                 var ca_dict = new VariantDict ();
-                if (change_annotations_group_on_label)
+                if (WorkspaceEditClientFlags.CHANGE_ANNOTATIONS_GROUP_ON_LABEL in flags)
                     ca_dict.insert_value ("groupsOnLabel", true);
                 dict.insert_value ("changeAnnotationSupport", ca_dict.end ());
             }
@@ -226,60 +252,86 @@ namespace Lsp {
         }
     }
 
+    [Flags]
+    public enum WorkspaceClientFlags {
+        NONE = 0,
+        APPLY_EDIT = 1
+    }
+
     /**
      * Workspace-specific client capabilities.
      */
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_workspace_client_caps_ref",
-        unref_function = "lsp_workspace_client_caps_unref")]
-    public class WorkspaceClientCaps {
-        private int ref_count = 1;
-
-        public unowned WorkspaceClientCaps ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
+    public struct WorkspaceClientCaps {
 
         /**
          * The client supports applying batch edits to the workspace by
          * supporting the request 'workspace/applyEdit'
          */
-        public bool apply_edit { get; set; }
+        public WorkspaceClientFlags flags { get; set; }
 
         /**
          * Capabilities specific to {@link WorkspaceEdit}s.
          *
          * @since 3.13.0
          */
-        public WorkspaceEditClientCaps? workspace_edit { get; set; }
+        public WorkspaceEditClientCaps workspace_edit { get; set; }
+
+        public WorkspaceClientCaps (
+            WorkspaceClientFlags flags = WorkspaceClientFlags.NONE
+        ) {
+            this.flags = flags;
+            workspace_edit = WorkspaceEditClientCaps ();
+        }
+
+        public WorkspaceClientCaps.with_workspace_edit (
+            WorkspaceEditClientCaps workspace_edit,
+            WorkspaceClientFlags flags = WorkspaceClientFlags.NONE
+        ) {
+            this.flags = flags;
+            this.workspace_edit = workspace_edit;
+        }
 
         public WorkspaceClientCaps.from_variant (Variant dict) throws DeserializeError {
+            this ();
             Variant? prop;
 
-            if ((prop = dict.lookup_value ("applyEdit", VariantType.BOOLEAN)) != null)
-                apply_edit = (bool) prop;
+            if ((prop = dict.lookup_value ("applyEdit",
+                VariantType.BOOLEAN)) != null && (bool) prop)
+                flags |= WorkspaceClientFlags.APPLY_EDIT;
 
             if ((prop = dict.lookup_value ("workspaceEdit", VariantType.VARDICT)) != null)
-                workspace_edit = new WorkspaceEditClientCaps.from_variant (prop);
+                workspace_edit = WorkspaceEditClientCaps.from_variant (prop);
+        }
+
+        internal bool is_empty () {
+            return flags == WorkspaceClientFlags.NONE && workspace_edit.is_empty ();
         }
 
         public Variant to_variant () {
             var dict = new VariantDict ();
 
-            if (apply_edit)
+            if (WorkspaceClientFlags.APPLY_EDIT in flags)
                 dict.insert_value ("applyEdit", true);
-            if (workspace_edit != null)
+            if (!workspace_edit.is_empty ())
                 dict.insert_value ("workspaceEdit", workspace_edit.to_variant ());
 
             return dict.end ();
         }
+    }
+
+    /**
+     * Boolean completion capabilities.
+     */
+    [Flags]
+    public enum CompletionClientFlags {
+        NONE = 0,
+        SNIPPETS = 1,
+        COMMIT_CHARACTERS = 2,
+        DEPRECATED_PROPERTY = 4,
+        PRESELECT_PROPERTY = 8,
+        INSERT_REPLACE = 16,
+        CONTEXT = 32,
+        LABEL_DETAILS = 64
     }
 
     /**
@@ -304,35 +356,15 @@ namespace Lsp {
         private extern void free ();
 
         /**
-         * Client supports snippets as insert text.
-         *
-         * A snippet can define tab stops and placeholders with `$1`, `$2` and
-         * `${3:foo}`. `$0` defines the final tab stop, it defaults to the end
-         * of the snippet. Placeholders with equal identifiers are linked, that
-         * is typing in one will update others too.
+         * Boolean completion capabilities supported by the client.
          */
-        public bool snippets { get; set; }
-
-        /**
-         * Client supports commit characters on a completion item.
-         */
-        public bool commit_chars { get; set; }
+        public CompletionClientFlags flags { get; set; default = NONE; }
 
         /**
          * Client supports the following content formats for the documentation
          * property. The order describes the preferred format of the client.
          */
         public MarkupKind[]? documentation_formats { get; set; }
-
-        /**
-         * Client supports the deprecated property on a completion item.
-         */
-        public bool deprecated_property { get; set; }
-
-        /**
-         * Client supports the preselect property on a completion item.
-         */
-        public bool preselect_property { get; set; }
 
         /**
          * Client supports the tag property on a completion item. Clients
@@ -347,14 +379,6 @@ namespace Lsp {
             set;
             default = NONE;
         }
-
-        /**
-         * Client supports insert replace edit to control different behavior if
-         * a completion item is inserted in the text or should replace text.
-         *
-         * @since 3.16.0
-         */
-        public bool insert_replace { get; set; }
 
         /**
          * Indicates which properties a client can resolve lazily on a
@@ -386,19 +410,6 @@ namespace Lsp {
          */
         public CompletionItemKind[]? item_kinds { get; set; }
 
-        /**
-         * The client supports to send additional context information for a
-         * `textDocument/completion` request.
-         */
-        public bool context { get; set; }
-
-        /**
-         * The client supports completion item label details.
-         *
-         * @since 3.17.0
-         */
-        public bool label_details { get; set; }
-
         public CompletionClientCaps.from_variant (Variant dict) throws DeserializeError {
             Variant? prop;
             Variant item_caps = dict;
@@ -407,30 +418,33 @@ namespace Lsp {
                 item_caps = prop;
 
             if ((prop = item_caps.lookup_value ("snippetSupport", VariantType.BOOLEAN)) != null)
-                snippets = (bool) prop;
+                flags |= (bool) prop ? CompletionClientFlags.SNIPPETS : CompletionClientFlags.NONE;
             else if ((prop = item_caps.lookup_value ("snippet", VariantType.BOOLEAN)) != null)
-                snippets = (bool) prop;
+                flags |= (bool) prop ? CompletionClientFlags.SNIPPETS : CompletionClientFlags.NONE;
 
             if ((prop = item_caps.lookup_value ("commitCharactersSupport",
-                VariantType.BOOLEAN)) != null)
-                commit_chars = (bool) prop;
+                VariantType.BOOLEAN)) != null && (bool) prop)
+                flags |= CompletionClientFlags.COMMIT_CHARACTERS;
 
-            if ((prop = item_caps.lookup_value ("deprecatedSupport", VariantType.BOOLEAN)) != null)
-                deprecated_property = (bool) prop;
+            if ((prop = item_caps.lookup_value ("deprecatedSupport",
+                VariantType.BOOLEAN)) != null && (bool) prop)
+                flags |= CompletionClientFlags.DEPRECATED_PROPERTY;
 
-            if ((prop = item_caps.lookup_value ("preselectSupport", VariantType.BOOLEAN)) != null)
-                preselect_property = (bool) prop;
+            if ((prop = item_caps.lookup_value ("preselectSupport",
+                VariantType.BOOLEAN)) != null && (bool) prop)
+                flags |= CompletionClientFlags.PRESELECT_PROPERTY;
 
             if ((prop = item_caps.lookup_value ("insertReplaceSupport",
-                VariantType.BOOLEAN)) != null)
-                insert_replace = (bool) prop;
+                VariantType.BOOLEAN)) != null && (bool) prop)
+                flags |= CompletionClientFlags.INSERT_REPLACE;
 
-            if ((prop = dict.lookup_value ("contextSupport", VariantType.BOOLEAN)) != null)
-                context = (bool) prop;
+            if ((prop = dict.lookup_value ("contextSupport",
+                VariantType.BOOLEAN)) != null && (bool) prop)
+                flags |= CompletionClientFlags.CONTEXT;
 
             if ((prop = item_caps.lookup_value ("labelDetailsSupport",
-                VariantType.BOOLEAN)) != null)
-                label_details = (bool) prop;
+                VariantType.BOOLEAN)) != null && (bool) prop)
+                flags |= CompletionClientFlags.LABEL_DETAILS;
 
             if ((prop = item_caps.lookup_value ("resolveSupport", VariantType.VARDICT)) != null) {
                 Variant? rp;
@@ -510,31 +524,31 @@ namespace Lsp {
             var item = new VariantDict ();
             bool has_item_caps = false;
 
-            if (snippets) {
+            if (CompletionClientFlags.SNIPPETS in flags) {
                 item.insert_value ("snippetSupport", true);
                 has_item_caps = true;
             }
-            if (commit_chars) {
+            if (CompletionClientFlags.COMMIT_CHARACTERS in flags) {
                 item.insert_value ("commitCharactersSupport", true);
                 has_item_caps = true;
             }
-            if (deprecated_property) {
+            if (CompletionClientFlags.DEPRECATED_PROPERTY in flags) {
                 item.insert_value ("deprecatedSupport", true);
                 has_item_caps = true;
             }
-            if (preselect_property) {
+            if (CompletionClientFlags.PRESELECT_PROPERTY in flags) {
                 item.insert_value ("preselectSupport", true);
                 has_item_caps = true;
             }
-            if (insert_replace) {
+            if (CompletionClientFlags.INSERT_REPLACE in flags) {
                 item.insert_value ("insertReplaceSupport", true);
                 has_item_caps = true;
             }
-            if (label_details) {
+            if (CompletionClientFlags.LABEL_DETAILS in flags) {
                 item.insert_value ("labelDetailsSupport", true);
                 has_item_caps = true;
             }
-            if (context)
+            if (CompletionClientFlags.CONTEXT in flags)
                 dict.insert_value ("contextSupport", true);
             if (resolve_properties != null) {
                 var rp_dict = new VariantDict ();
@@ -594,6 +608,17 @@ namespace Lsp {
     }
 
     /**
+     * Boolean document symbol capabilities.
+     */
+    [Flags]
+    public enum DocumentSymbolClientFlags {
+        NONE = 0,
+        DYNAMIC_REGISTRATION = 1,
+        HIERARCHICAL_DOCUMENT_SYMBOLS = 2,
+        LABEL = 4
+    }
+
+    /**
      * Client capabilities for document symbols.
      */
     [Compact (opaque = true)]
@@ -614,11 +639,9 @@ namespace Lsp {
 
         private extern void free ();
 
-        public bool dynamic_registration { get; set; }
+        public DocumentSymbolClientFlags flags { get; set; default = NONE; }
         public SymbolKind[]? symbol_kinds { get; set; }
-        public bool hierarchical_document_symbol_support { get; set; }
         public SymbolTag supported_tags { get; set; default = UNSET; }
-        public bool label_support { get; set; }
 
         public DocumentSymbolClientCaps () {
         }
@@ -627,8 +650,8 @@ namespace Lsp {
             Variant? prop;
 
             if ((prop = lookup_property (dict, "dynamicRegistration", VariantType.BOOLEAN,
-                "DocumentSymbolClientCaps")) != null)
-                dynamic_registration = (bool) prop;
+                "DocumentSymbolClientCaps")) != null && (bool) prop)
+                flags |= DocumentSymbolClientFlags.DYNAMIC_REGISTRATION;
 
             if ((prop = lookup_property (dict, "symbolKind", VariantType.VARDICT,
                 "DocumentSymbolClientCaps")) != null) {
@@ -645,8 +668,8 @@ namespace Lsp {
             }
 
             if ((prop = lookup_property (dict, "hierarchicalDocumentSymbolSupport",
-                VariantType.BOOLEAN, "DocumentSymbolClientCaps")) != null)
-                hierarchical_document_symbol_support = (bool) prop;
+                VariantType.BOOLEAN, "DocumentSymbolClientCaps")) != null && (bool) prop)
+                flags |= DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS;
 
             if ((prop = lookup_property (dict, "tagSupport", VariantType.VARDICT,
                 "DocumentSymbolClientCaps")) != null) {
@@ -665,13 +688,13 @@ namespace Lsp {
             }
 
             if ((prop = lookup_property (dict, "labelSupport", VariantType.BOOLEAN,
-                "DocumentSymbolClientCaps")) != null)
-                label_support = (bool) prop;
+                "DocumentSymbolClientCaps")) != null && (bool) prop)
+                flags |= DocumentSymbolClientFlags.LABEL;
         }
 
         public Variant to_variant () {
             var dict = new VariantDict ();
-            if (dynamic_registration)
+            if (DocumentSymbolClientFlags.DYNAMIC_REGISTRATION in flags)
                 dict.insert_value ("dynamicRegistration", true);
             if (symbol_kinds != null) {
                 Variant[] values = {};
@@ -681,7 +704,7 @@ namespace Lsp {
                 symbol_kind.insert_value ("valueSet", values);
                 dict.insert_value ("symbolKind", symbol_kind.end ());
             }
-            if (hierarchical_document_symbol_support)
+            if (DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS in flags)
                 dict.insert_value ("hierarchicalDocumentSymbolSupport", true);
             if (supported_tags != SymbolTag.UNSET) {
                 Variant[] values = {};
@@ -691,7 +714,7 @@ namespace Lsp {
                 tag_support.insert_value ("valueSet", values);
                 dict.insert_value ("tagSupport", tag_support.end ());
             }
-            if (label_support)
+            if (DocumentSymbolClientFlags.LABEL in flags)
                 dict.insert_value ("labelSupport", true);
             return dict.end ();
         }
@@ -707,108 +730,29 @@ namespace Lsp {
 
     /**
      * Client capabilities for renaming symbols.
+     *
+     * `SUPPORTED` records the presence of the protocol capability object, so
+     * an empty object remains distinguishable from an unsupported feature.
      */
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_rename_client_caps_ref",
-        unref_function = "lsp_rename_client_caps_unref")]
-    public class RenameClientCaps {
-        private int ref_count = 1;
-
-        public unowned RenameClientCaps ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
-
-        public bool dynamic_registration { get; set; }
-        public bool prepare_support { get; set; }
-        public PrepareSupportDefaultBehavior prepare_support_default_behavior {
-            get;
-            set;
-            default = UNSET;
-        }
-        public bool honors_change_annotations { get; set; }
-
-        public RenameClientCaps () {
-        }
-
-        public RenameClientCaps.from_variant (Variant dict) throws DeserializeError {
-            Variant? prop;
-            if ((prop = lookup_property (dict, "dynamicRegistration", VariantType.BOOLEAN,
-                "RenameClientCaps")) != null)
-                dynamic_registration = (bool) prop;
-            if ((prop = lookup_property (dict, "prepareSupport", VariantType.BOOLEAN,
-                "RenameClientCaps")) != null)
-                prepare_support = (bool) prop;
-            if ((prop = lookup_property (dict, "prepareSupportDefaultBehavior",
-                VariantType.INT64, "RenameClientCaps")) != null)
-                prepare_support_default_behavior = (PrepareSupportDefaultBehavior) (int64) prop;
-            if ((prop = lookup_property (dict, "honorsChangeAnnotations", VariantType.BOOLEAN,
-                "RenameClientCaps")) != null)
-                honors_change_annotations = (bool) prop;
-        }
-
-        public Variant to_variant () {
-            var dict = new VariantDict ();
-            if (dynamic_registration)
-                dict.insert_value ("dynamicRegistration", true);
-            if (prepare_support)
-                dict.insert_value ("prepareSupport", true);
-            if (prepare_support_default_behavior != PrepareSupportDefaultBehavior.UNSET)
-                dict.insert_value ("prepareSupportDefaultBehavior",
-                    new Variant.int64 (prepare_support_default_behavior));
-            if (honors_change_annotations)
-                dict.insert_value ("honorsChangeAnnotations", true);
-            return dict.end ();
-        }
+    [Flags]
+    public enum RenameClientCaps {
+        NONE = 0,
+        SUPPORTED = 1,
+        DYNAMIC_REGISTRATION = 2,
+        PREPARE_SUPPORT = 4,
+        HONORS_CHANGE_ANNOTATIONS = 8
     }
 
     /**
      * Client capabilities for type hierarchy requests.
+     *
+     * `SUPPORTED` records the presence of the protocol capability object.
      */
-    [Compact (opaque = true)]
-    [CCode (lower_case_cprefix = "lsp_type_hierarchy_client_caps_",
-        ref_function = "lsp_type_hierarchy_client_caps_ref",
-        unref_function = "lsp_type_hierarchy_client_caps_unref")]
-    public class TypeHierarchyClientCaps {
-        private int ref_count = 1;
-
-        public unowned TypeHierarchyClientCaps ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
-
-        public bool dynamic_registration { get; set; }
-
-        public TypeHierarchyClientCaps () {
-        }
-
-        public TypeHierarchyClientCaps.from_variant (Variant dict) throws DeserializeError {
-            var prop = lookup_property (dict, "dynamicRegistration", VariantType.BOOLEAN,
-                "TypeHierarchyClientCaps");
-            if (prop != null)
-                dynamic_registration = (bool) prop;
-        }
-
-        public Variant to_variant () {
-            var dict = new VariantDict ();
-            if (dynamic_registration)
-                dict.insert_value ("dynamicRegistration", true);
-            return dict.end ();
-        }
+    [Flags]
+    public enum TypeHierarchyClientCaps {
+        NONE = 0,
+        SUPPORTED = 1,
+        DYNAMIC_REGISTRATION = 2
     }
 
     [Flags]
@@ -818,23 +762,26 @@ namespace Lsp {
         /**
          * The client supports sending 'will save' notifications.
          */
-        WILL_SAVE = 1 << 0,
+        WILL_SAVE = 1,
 
         /**
          * The client supports sending a 'will save' request and waits for
          * a response providing text edits which will be applied to the
          * document before it is saved.
          */
-        WILL_SAVE_WAIT_UNTIL = 1 << 1,
+        WILL_SAVE_WAIT_UNTIL = 2,
 
         /**
          * The client supports 'did save' notifications.
          */
-        DID_SAVE = 1 << 2
+        DID_SAVE = 4
     }
 
     /**
      * Text document-specific client capabilities.
+     *
+     * This remains ref-counted because completion and document symbol
+     * capabilities contain owned arrays.
      */
     [Compact (opaque = true)]
     [CCode (ref_function = "lsp_text_document_client_caps_ref",
@@ -862,8 +809,13 @@ namespace Lsp {
 
         public CompletionClientCaps? completion { get; set; }
         public DocumentSymbolClientCaps? document_symbol { get; set; }
-        public RenameClientCaps? rename { get; set; }
-        public TypeHierarchyClientCaps? type_hierarchy { get; set; }
+        public RenameClientCaps rename { get; set; default = NONE; }
+        public PrepareSupportDefaultBehavior rename_prepare_support_default_behavior {
+            get;
+            set;
+            default = UNSET;
+        }
+        public TypeHierarchyClientCaps type_hierarchy { get; set; default = NONE; }
 
         public TextDocumentClientCaps () {
         }
@@ -890,10 +842,40 @@ namespace Lsp {
                 completion = new CompletionClientCaps.from_variant (prop);
             if ((prop = dict.lookup_value ("documentSymbol", VariantType.VARDICT)) != null)
                 document_symbol = new DocumentSymbolClientCaps.from_variant (prop);
-            if ((prop = dict.lookup_value ("rename", VariantType.VARDICT)) != null)
-                rename = new RenameClientCaps.from_variant (prop);
-            if ((prop = dict.lookup_value ("typeHierarchy", VariantType.VARDICT)) != null)
-                type_hierarchy = new TypeHierarchyClientCaps.from_variant (prop);
+            if ((prop = dict.lookup_value ("rename", VariantType.VARDICT)) != null) {
+                rename = RenameClientCaps.SUPPORTED;
+                Variant? rename_prop;
+                if ((rename_prop = lookup_property (prop, "dynamicRegistration",
+                    VariantType.BOOLEAN, "RenameClientCaps")) != null && (bool) rename_prop)
+                    rename |= RenameClientCaps.DYNAMIC_REGISTRATION;
+                if ((rename_prop = lookup_property (prop, "prepareSupport",
+                    VariantType.BOOLEAN, "RenameClientCaps")) != null && (bool) rename_prop)
+                    rename |= RenameClientCaps.PREPARE_SUPPORT;
+                if ((rename_prop = lookup_property (prop, "prepareSupportDefaultBehavior",
+                    VariantType.INT64, "RenameClientCaps")) != null)
+                    rename_prepare_support_default_behavior =
+                        (PrepareSupportDefaultBehavior) (int64) rename_prop;
+                if ((rename_prop = lookup_property (prop, "honorsChangeAnnotations",
+                    VariantType.BOOLEAN, "RenameClientCaps")) != null && (bool) rename_prop)
+                    rename |= RenameClientCaps.HONORS_CHANGE_ANNOTATIONS;
+            }
+            if ((prop = dict.lookup_value ("typeHierarchy", VariantType.VARDICT)) != null) {
+                type_hierarchy = TypeHierarchyClientCaps.SUPPORTED;
+                var hierarchy_prop = lookup_property (prop, "dynamicRegistration",
+                    VariantType.BOOLEAN, "TypeHierarchyClientCaps");
+                if (hierarchy_prop != null && (bool) hierarchy_prop)
+                    type_hierarchy |= TypeHierarchyClientCaps.DYNAMIC_REGISTRATION;
+            }
+        }
+
+        internal bool is_empty () {
+            return synchronization == TextDocumentSyncClientCaps.NONE &&
+                   completion == null &&
+                   document_symbol == null &&
+                   rename == RenameClientCaps.NONE &&
+                   rename_prepare_support_default_behavior ==
+                   PrepareSupportDefaultBehavior.UNSET &&
+                   type_hierarchy == TypeHierarchyClientCaps.NONE;
         }
 
         public Variant to_variant () {
@@ -914,10 +896,28 @@ namespace Lsp {
                 dict.insert_value ("completion", completion.to_variant ());
             if (document_symbol != null)
                 dict.insert_value ("documentSymbol", document_symbol.to_variant ());
-            if (rename != null)
-                dict.insert_value ("rename", rename.to_variant ());
-            if (type_hierarchy != null)
-                dict.insert_value ("typeHierarchy", type_hierarchy.to_variant ());
+            if (rename != RenameClientCaps.NONE ||
+                rename_prepare_support_default_behavior !=
+                PrepareSupportDefaultBehavior.UNSET) {
+                var rename_dict = new VariantDict ();
+                if (RenameClientCaps.DYNAMIC_REGISTRATION in rename)
+                    rename_dict.insert_value ("dynamicRegistration", true);
+                if (RenameClientCaps.PREPARE_SUPPORT in rename)
+                    rename_dict.insert_value ("prepareSupport", true);
+                if (rename_prepare_support_default_behavior !=
+                    PrepareSupportDefaultBehavior.UNSET)
+                    rename_dict.insert_value ("prepareSupportDefaultBehavior",
+                        new Variant.int64 (rename_prepare_support_default_behavior));
+                if (RenameClientCaps.HONORS_CHANGE_ANNOTATIONS in rename)
+                    rename_dict.insert_value ("honorsChangeAnnotations", true);
+                dict.insert_value ("rename", rename_dict.end ());
+            }
+            if (type_hierarchy != TypeHierarchyClientCaps.NONE) {
+                var hierarchy_dict = new VariantDict ();
+                if (TypeHierarchyClientCaps.DYNAMIC_REGISTRATION in type_hierarchy)
+                    hierarchy_dict.insert_value ("dynamicRegistration", true);
+                dict.insert_value ("typeHierarchy", hierarchy_dict.end ());
+            }
 
             return dict.end ();
         }
@@ -925,6 +925,9 @@ namespace Lsp {
 
     /**
      * Capabilities of the client / editor.
+     *
+     * This remains ref-counted because it owns optional text document
+     * capabilities.
      */
     [Compact (opaque = true)]
     [CCode (ref_function = "lsp_client_caps_ref", unref_function = "lsp_client_caps_unref")]
@@ -946,7 +949,7 @@ namespace Lsp {
         /**
          * Workspace-specific client capabilities.
          */
-        public WorkspaceClientCaps? workspace { get; set; }
+        public WorkspaceClientCaps workspace { get; set; }
 
         /**
          * Text document-specific client capabilities.
@@ -954,13 +957,15 @@ namespace Lsp {
         public TextDocumentClientCaps? text_document { get; set; }
 
         public ClientCaps () {
+            workspace = WorkspaceClientCaps ();
         }
 
         public ClientCaps.from_variant (Variant dict) throws DeserializeError {
+            workspace = WorkspaceClientCaps ();
             Variant? prop;
 
             if ((prop = dict.lookup_value ("workspace", VariantType.VARDICT)) != null)
-                workspace = new WorkspaceClientCaps.from_variant (prop);
+                workspace = WorkspaceClientCaps.from_variant (prop);
 
             if ((prop = dict.lookup_value ("textDocument", VariantType.VARDICT)) != null)
                 text_document = new TextDocumentClientCaps.from_variant (prop);
@@ -969,9 +974,9 @@ namespace Lsp {
         public Variant to_variant () {
             var dict = new VariantDict ();
 
-            if (workspace != null)
+            if (!workspace.is_empty ())
                 dict.insert_value ("workspace", workspace.to_variant ());
-            if (text_document != null)
+            if (text_document != null && !text_document.is_empty ())
                 dict.insert_value ("textDocument", text_document.to_variant ());
 
             return dict.end ();
