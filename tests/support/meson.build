@@ -1,6 +1,6 @@
 g_ir_scanner = find_program('g-ir-scanner', required: false)
 
-if g_ir_compiler.found() and g_ir_scanner.found()
+if is_variable('lsp_glib_typelib') and g_ir_scanner.found()
   gnome = import('gnome')
   gi_test_support = shared_library(
     'lsp-test-support',

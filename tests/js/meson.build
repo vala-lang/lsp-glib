@@ -1,6 +1,6 @@
 gjs = find_program('gjs', required: false)
 
-if gjs.found() and g_ir_compiler.found()
+if gjs.found() and is_variable('lsp_glib_typelib')
   js_test_env = environment()
   js_test_env.prepend(
     'GI_TYPELIB_PATH',

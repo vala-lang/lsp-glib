@@ -65,7 +65,7 @@ subdir('gir')
 install_data('lsp-glib.deps',
              install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'vala', 'vapi'))
 
-if g_ir_compiler.found()
+if g_ir_compiler.found() and get_option('default_library') != 'static'
   lsp_glib_typelib = custom_target('liblsp-glib-typelib',
     command: [
       g_ir_compiler,

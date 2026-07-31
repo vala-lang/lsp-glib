@@ -4,7 +4,7 @@ python = import('python').find_installation(
   required: false,
 )
 
-if python.found() and is_variable('gi_test_support_gir')
+if python.found() and is_variable('lsp_glib_typelib')
   python_test_env = environment()
   python_test_env.prepend(
     'GI_TYPELIB_PATH',
@@ -67,15 +67,17 @@ if python.found() and is_variable('gi_test_support_gir')
     env: python_test_env,
     suite: 'python',
   )
-  test(
-    'Python server JSON-RPC dispatch',
-    python,
-    args: files('server.py'),
-    depends: [
-      lsp_glib_typelib,
-      gi_test_support_gir,
-    ],
-    env: python_test_env,
-    suite: 'python',
-  )
+  if is_variable('gi_test_support_gir')
+    test(
+      'Python server JSON-RPC dispatch',
+      python,
+      args: files('server.py'),
+      depends: [
+        lsp_glib_typelib,
+        gi_test_support_gir,
+      ],
+      env: python_test_env,
+      suite: 'python',
+    )
+  endif
 endif
