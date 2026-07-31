@@ -36,15 +36,15 @@ private ServerCaps make_server_capabilities () {
         document_highlight = true,
         document_symbol = true,
         code_action = true,
-        code_lens = new CodeLensOptions (true),
-        document_link = new DocumentLinkOptions (true),
+        code_lens = CodeLensOptions (true),
+        document_link = DocumentLinkOptions (true),
         document_formatting = true,
         document_range_formatting = true,
         document_on_type_formatting =
             new DocumentOnTypeFormattingOptions ("}", { ";", "\n" }),
-        rename = new RenameOptions (true),
-        call_hierarchy = new CallHierarchyOptions (),
-        inlay_hint = new InlayHintOptions (true),
+        rename = RenameOptions (true),
+        call_hierarchy = CallHierarchyOptions (),
+        inlay_hint = InlayHintOptions (true),
         workspace_symbol = true
     };
 }
@@ -74,9 +74,9 @@ private void test_server_capabilities_round_trip () {
         assert (decoded.document_highlight);
         assert (decoded.document_symbol);
         assert (decoded.code_action);
-        assert (decoded.code_lens != null);
+        assert (decoded.code_lens.supported);
         assert (decoded.code_lens.supports_resolve);
-        assert (decoded.document_link != null);
+        assert (decoded.document_link.supported);
         assert (decoded.document_link.supports_resolve);
         assert (decoded.document_formatting);
         assert (decoded.document_range_formatting);
@@ -85,10 +85,10 @@ private void test_server_capabilities_round_trip () {
             decoded.document_on_type_formatting.first_trigger == "}");
         assert (
             decoded.document_on_type_formatting.more_triggers.length == 2);
-        assert (decoded.rename != null);
+        assert (decoded.rename.supported);
         assert (decoded.rename.supports_prepare);
-        assert (decoded.call_hierarchy != null);
-        assert (decoded.inlay_hint != null);
+        assert (decoded.call_hierarchy.supported);
+        assert (decoded.inlay_hint.supported);
         assert (decoded.inlay_hint.resolve_provider);
         assert (decoded.workspace_symbol);
     } catch (DeserializeError e) {
@@ -175,8 +175,34 @@ private void test_empty_server_capabilities () {
             TextDocumentSyncKind.NONE);
         assert (!decoded.hover);
         assert (decoded.completion == null);
+        assert (!decoded.code_lens.supported);
+        assert (!decoded.document_link.supported);
+        assert (!decoded.rename.supported);
+        assert (!decoded.call_hierarchy.supported);
+        assert (!decoded.type_hierarchy.supported);
+        assert (!decoded.inlay_hint.supported);
     } catch (DeserializeError e) {
         error ("empty server capabilities were rejected: %s", e.message);
+    }
+}
+
+private void test_boolean_server_capabilities () {
+    var dict = new VariantDict ();
+    dict.insert_value ("renameProvider", true);
+    dict.insert_value ("callHierarchyProvider", true);
+    dict.insert_value ("typeHierarchyProvider", true);
+    dict.insert_value ("inlayHintProvider", true);
+
+    try {
+        var decoded = new ServerCaps.from_variant (dict.end ());
+        assert (decoded.rename.supported);
+        assert (!decoded.rename.supports_prepare);
+        assert (decoded.call_hierarchy.supported);
+        assert (decoded.type_hierarchy.supported);
+        assert (decoded.inlay_hint.supported);
+        assert (!decoded.inlay_hint.resolve_provider);
+    } catch (DeserializeError e) {
+        error ("boolean server capabilities were rejected: %s", e.message);
     }
 }
 
@@ -194,5 +220,8 @@ private int main (string[] args) {
     Test.add_func (
         "/deserialization/initialization/empty-capabilities",
         test_empty_server_capabilities);
+    Test.add_func (
+        "/deserialization/initialization/boolean-capabilities",
+        test_boolean_server_capabilities);
     return Test.run ();
 }

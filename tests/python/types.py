@@ -75,6 +75,50 @@ class TypedSerializationTest(unittest.TestCase):
         )
         self.assertEqual(decoded_items[0].get_data().unpack(), "completion-token")
 
+    def test_flat_protocol_records(self) -> None:
+        highlight = Lsp.DocumentHighlight()
+        highlight.init(
+            make_range(2, 3, 2, 9),
+            Lsp.DocumentHighlightKind.WRITE,
+        )
+        decoded_highlight = Lsp.DocumentHighlight()
+        decoded_highlight.init_from_variant(highlight.to_variant())
+        self.assertEqual(
+            decoded_highlight.get_kind(),
+            Lsp.DocumentHighlightKind.WRITE,
+        )
+        self.assertEqual(decoded_highlight.get_range().start.character, 3)
+
+        context = Lsp.ReferenceContext()
+        context.init(False)
+        decoded_context = Lsp.ReferenceContext()
+        decoded_context.init_from_variant(context.to_variant())
+        self.assertFalse(decoded_context.get_include_declaration())
+
+        options = Lsp.FormattingOptions()
+        options.init(4, True)
+        options.set_flags(
+            Lsp.FormattingOptionFlags.TRIM_TRAILING_WHITESPACE
+            | Lsp.FormattingOptionFlags.INSERT_FINAL_NEWLINE
+            | Lsp.FormattingOptionFlags.TRIM_FINAL_NEWLINES
+        )
+        decoded_options = Lsp.FormattingOptions()
+        decoded_options.init_from_variant(options.to_variant())
+        self.assertEqual(decoded_options.get_tab_size(), 4)
+        self.assertTrue(decoded_options.get_insert_spaces())
+        self.assertTrue(
+            decoded_options.get_flags()
+            & Lsp.FormattingOptionFlags.TRIM_TRAILING_WHITESPACE
+        )
+        self.assertTrue(
+            decoded_options.get_flags()
+            & Lsp.FormattingOptionFlags.INSERT_FINAL_NEWLINE
+        )
+        self.assertTrue(
+            decoded_options.get_flags()
+            & Lsp.FormattingOptionFlags.TRIM_FINAL_NEWLINES
+        )
+
     def test_initialization(self) -> None:
         root_uri = GLib.Uri.parse(
             "file:///workspace",
@@ -82,12 +126,28 @@ class TypedSerializationTest(unittest.TestCase):
         )
         capabilities = Lsp.ServerCaps.new()
         completion = Lsp.CompletionOptions.new(True, [".", ":"])
-        inlay_hint = Lsp.InlayHintOptions.new(True)
+        code_lens = Lsp.CodeLensOptions()
+        code_lens.init(True)
+        document_link = Lsp.DocumentLinkOptions()
+        document_link.init(True)
+        rename = Lsp.RenameOptions()
+        rename.init(True)
+        call_hierarchy = Lsp.CallHierarchyOptions()
+        call_hierarchy.init()
+        type_hierarchy = Lsp.TypeHierarchyOptions()
+        type_hierarchy.init()
+        inlay_hint = Lsp.InlayHintOptions()
+        inlay_hint.init(True)
         capabilities.set_text_document_sync(
             Lsp.TextDocumentSyncKind.INCREMENTAL
         )
         capabilities.set_completion(completion)
         capabilities.set_hover(True)
+        capabilities.set_code_lens(code_lens)
+        capabilities.set_document_link(document_link)
+        capabilities.set_rename(rename)
+        capabilities.set_call_hierarchy(call_hierarchy)
+        capabilities.set_type_hierarchy(type_hierarchy)
         capabilities.set_inlay_hint(inlay_hint)
 
         # Nullable integer properties are exposed as pointers by GI, so
@@ -125,6 +185,17 @@ class TypedSerializationTest(unittest.TestCase):
         )
         self.assertTrue(decoded_caps.get_completion().get_supports_resolve())
         self.assertTrue(decoded_caps.get_hover())
+        self.assertTrue(decoded_caps.get_code_lens().get_supported())
+        self.assertTrue(decoded_caps.get_code_lens().get_supports_resolve())
+        self.assertTrue(decoded_caps.get_document_link().get_supported())
+        self.assertTrue(
+            decoded_caps.get_document_link().get_supports_resolve()
+        )
+        self.assertTrue(decoded_caps.get_rename().get_supported())
+        self.assertTrue(decoded_caps.get_rename().get_supports_prepare())
+        self.assertTrue(decoded_caps.get_call_hierarchy().get_supported())
+        self.assertTrue(decoded_caps.get_type_hierarchy().get_supported())
+        self.assertTrue(decoded_caps.get_inlay_hint().get_supported())
         self.assertTrue(decoded_caps.get_inlay_hint().get_resolve_provider())
 
     def test_workspace_edit(self) -> None:
@@ -289,16 +360,27 @@ class TypedSerializationTest(unittest.TestCase):
         self.assertEqual(decoded_item.get_data().unpack(), "hierarchy-token")
 
     def test_vls_capabilities_and_error_codes(self) -> None:
-        symbol_caps = Lsp.DocumentSymbolClientCaps.new()
-        symbol_caps.set_flags(
+        symbol_caps = Lsp.DocumentSymbolClientCaps()
+        symbol_caps.init(
             Lsp.DocumentSymbolClientFlags.DYNAMIC_REGISTRATION
             | Lsp.DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS
-            | Lsp.DocumentSymbolClientFlags.LABEL
+            | Lsp.DocumentSymbolClientFlags.LABEL,
+            Lsp.SymbolKindFlags.CLASS
+            | Lsp.SymbolKindFlags.METHOD
+            | Lsp.SymbolKindFlags.TYPE_PARAMETER,
+            Lsp.SymbolTag.DEPRECATED,
         )
-        symbol_caps.set_symbol_kinds(
-            [Lsp.SymbolKind.CLASS, Lsp.SymbolKind.METHOD]
+
+        completion_caps = Lsp.CompletionClientCaps.new()
+        completion_caps.set_insert_text_modes(
+            Lsp.InsertTextModeFlags.AS_IS
+            | Lsp.InsertTextModeFlags.ADJUST_INDENTATION
         )
-        symbol_caps.set_supported_tags(Lsp.SymbolTag.DEPRECATED)
+        completion_caps.set_item_kinds(
+            Lsp.CompletionItemKindFlags.TEXT
+            | Lsp.CompletionItemKindFlags.FUNCTION
+            | Lsp.CompletionItemKindFlags.TYPE_PARAMETER
+        )
 
         workspace_edit = Lsp.WorkspaceEditClientCaps()
         workspace_edit.init(
@@ -319,6 +401,7 @@ class TypedSerializationTest(unittest.TestCase):
             Lsp.TextDocumentSyncClientCaps.WILL_SAVE
             | Lsp.TextDocumentSyncClientCaps.DID_SAVE,
         )
+        text_caps.set_completion(completion_caps)
         text_caps.set_document_symbol(symbol_caps)
         text_caps.set_rename(
             Lsp.RenameClientCaps.SUPPORTED
@@ -352,8 +435,20 @@ class TypedSerializationTest(unittest.TestCase):
             & Lsp.TextDocumentSyncClientCaps.WILL_SAVE
         )
         self.assertTrue(
+            decoded_text.get_completion().get_insert_text_modes()
+            & Lsp.InsertTextModeFlags.ADJUST_INDENTATION
+        )
+        self.assertTrue(
+            decoded_text.get_completion().get_item_kinds()
+            & Lsp.CompletionItemKindFlags.TYPE_PARAMETER
+        )
+        self.assertTrue(
             decoded_text.get_document_symbol().get_flags()
             & Lsp.DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS
+        )
+        self.assertTrue(
+            decoded_text.get_document_symbol().get_symbol_kinds()
+            & Lsp.SymbolKindFlags.TYPE_PARAMETER
         )
         self.assertTrue(
             decoded_text.get_rename()
@@ -369,9 +464,11 @@ class TypedSerializationTest(unittest.TestCase):
         )
 
         server_caps = Lsp.ServerCaps.new()
-        server_caps.set_type_hierarchy(Lsp.TypeHierarchyOptions.new())
+        type_hierarchy = Lsp.TypeHierarchyOptions()
+        type_hierarchy.init()
+        server_caps.set_type_hierarchy(type_hierarchy)
         decoded_server = Lsp.ServerCaps.from_variant(server_caps.to_variant())
-        self.assertIsNotNone(decoded_server.get_type_hierarchy())
+        self.assertTrue(decoded_server.get_type_hierarchy().get_supported())
 
         expected_errors = {
             "PARSE_ERROR": -32700,

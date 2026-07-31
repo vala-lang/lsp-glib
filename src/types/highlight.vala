@@ -44,24 +44,7 @@ namespace Lsp {
      * deserves special attention. Usually a document highlight is
      * visualized by changing the background color of its range.
      */
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_document_highlight_ref",
-        unref_function = "lsp_document_highlight_unref")]
-    public class DocumentHighlight {
-        private int ref_count = 1;
-
-        public unowned DocumentHighlight ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
-
+    public struct DocumentHighlight {
         /**
          * The range this highlight applies to.
          */
@@ -70,7 +53,7 @@ namespace Lsp {
         /**
          * The highlight kind, default is {@link DocumentHighlightKind.TEXT}.
          */
-        public DocumentHighlightKind kind { get; set; default = TEXT; }
+        public DocumentHighlightKind kind { get; set; }
 
         public DocumentHighlight (Range range, DocumentHighlightKind kind = TEXT) {
             this.range = range;
@@ -80,6 +63,7 @@ namespace Lsp {
         public DocumentHighlight.from_variant (Variant dict) throws DeserializeError {
             Variant? prop = null;
 
+            kind = DocumentHighlightKind.TEXT;
             range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT,
                 "DocumentHighlight"));
 

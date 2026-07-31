@@ -110,12 +110,39 @@ namespace Lsp {
     }
 
     /**
+     * A set of {@link DiagnosticTag} values.
+     */
+    [Flags]
+    public enum DiagnosticTagFlags {
+        NONE = 0,
+        UNNECESSARY = 1,
+        DEPRECATED = 2
+    }
+
+    /**
      * Represents a related message and source code location for a diagnostic.
      *
      * This should be used to point to code locations that cause or are related
      * to a diagnostics, e.g when duplicating a symbol in a scope.
      */
-    public struct DiagnosticRelatedInformation {
+    [Compact (opaque = true)]
+    [CCode (ref_function = "lsp_diagnostic_related_information_ref",
+        unref_function = "lsp_diagnostic_related_information_unref")]
+    public class DiagnosticRelatedInformation {
+        private int ref_count = 1;
+
+        public unowned DiagnosticRelatedInformation ref () {
+            AtomicInt.add (ref this.ref_count, 1);
+            return this;
+        }
+
+        public void unref () {
+            if (AtomicInt.dec_and_test (ref this.ref_count))
+                this.free ();
+        }
+
+        private extern void free ();
+
         /**
          * The location of this related diagnostic information.
          */
@@ -208,7 +235,7 @@ namespace Lsp {
          *
          * @since 3.15.0
          */
-        public DiagnosticTag[]? tags { get; set; }
+        public DiagnosticTagFlags tags { get; set; default = NONE; }
 
         /**
          * An array of related diagnostic information, e.g. when symbol-names
@@ -269,14 +296,22 @@ namespace Lsp {
 
             if ((prop = lookup_property (variant, "tags", VariantType.ARRAY,
                 "LspDiagnostic")) != null) {
-                DiagnosticTag[] diag_tags = {};
+                DiagnosticTagFlags diag_tags = DiagnosticTagFlags.NONE;
                 foreach (var tag in prop) {
                     var tag_value = expect_array_element (
                         tag,
                         VariantType.INT64,
                         "Diagnostic.tags");
-                    diag_tags += DiagnosticTag.parse_int (
-                        (int) (int64) tag_value);
+                    switch (DiagnosticTag.parse_int ((int) (int64) tag_value)) {
+                        case DiagnosticTag.UNNECESSARY:
+                            diag_tags |= DiagnosticTagFlags.UNNECESSARY;
+                            break;
+                        case DiagnosticTag.DEPRECATED:
+                            diag_tags |= DiagnosticTagFlags.DEPRECATED;
+                            break;
+                        case DiagnosticTag.UNSET:
+                            assert_not_reached ();
+                    }
                 }
                 tags = diag_tags;
             }
@@ -285,7 +320,7 @@ namespace Lsp {
                 "LspDiagnostic")) != null) {
                 DiagnosticRelatedInformation[] related_info = {};
                 foreach (var related in prop) {
-                    related_info += DiagnosticRelatedInformation.from_variant (
+                    related_info += new DiagnosticRelatedInformation.from_variant (
                         expect_array_element (
                             related,
                             VariantType.VARDICT,
@@ -310,10 +345,12 @@ namespace Lsp {
             if (source != null)
                 dict.insert_value ("source", source);
             dict.insert_value ("message", message);
-            if (tags != null) {
+            if (tags != DiagnosticTagFlags.NONE) {
                 Variant[] tags_list = {};
-                foreach (var tag in tags)
-                    tags_list += new Variant.int64 ((int64) tag);
+                if (DiagnosticTagFlags.UNNECESSARY in tags)
+                    tags_list += new Variant.int64 (DiagnosticTag.UNNECESSARY);
+                if (DiagnosticTagFlags.DEPRECATED in tags)
+                    tags_list += new Variant.int64 (DiagnosticTag.DEPRECATED);
                 dict.insert_value ("tags", new Variant.array (VariantType.INT64, tags_list));
             }
             if (related_information != null) {

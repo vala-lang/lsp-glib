@@ -53,6 +53,41 @@ namespace Lsp {
     }
 
     /**
+     * A set of {@link SymbolKind} values supported by a client. Protocol value
+     * `n` maps to bit `1 << (n - 1)`.
+     */
+    [Flags]
+    public enum SymbolKindFlags {
+        NONE = 0,
+        FILE = 1,
+        MODULE = 2,
+        NAMESPACE = 4,
+        PACKAGE = 8,
+        CLASS = 16,
+        METHOD = 32,
+        PROPERTY = 64,
+        FIELD = 128,
+        CONSTRUCTOR = 256,
+        ENUM = 512,
+        INTERFACE = 1024,
+        FUNCTION = 2048,
+        VARIABLE = 4096,
+        CONSTANT = 8192,
+        STRING = 16384,
+        NUMBER = 32768,
+        BOOLEAN = 65536,
+        ARRAY = 131072,
+        OBJECT = 262144,
+        KEY = 524288,
+        NULL = 1048576,
+        ENUM_MEMBER = 2097152,
+        STRUCT = 4194304,
+        EVENT = 8388608,
+        OPERATOR = 16777216,
+        TYPE_PARAMETER = 33554432
+    }
+
+    /**
      * Symbol tags are extra annotations that tweak the rendering of a
      * symbol.
      */

@@ -84,10 +84,10 @@ private void test_command_highlight_and_hover () {
         assert ((int64) decoded_command.arguments[1] == 9);
         assert ((bool) decoded_command.arguments[2]);
 
-        var highlight = new DocumentHighlight (
+        var highlight = DocumentHighlight (
             make_range (1, 1, 1, 6),
             DocumentHighlightKind.WRITE);
-        var decoded_highlight = new DocumentHighlight.from_variant (
+        var decoded_highlight = DocumentHighlight.from_variant (
             highlight.to_variant ());
         assert (decoded_highlight.kind == DocumentHighlightKind.WRITE);
         assert (decoded_highlight.range.end.character == 6);
@@ -112,12 +112,11 @@ private void test_command_highlight_and_hover () {
 
 private void test_formatting_and_rename_params () {
     try {
-        var options = new FormattingOptions (4, true) {
-            flags =
-                FormattingOptionFlags.TRIM_TRAILING_WHITESPACE |
-                FormattingOptionFlags.INSERT_FINAL_NEWLINE |
-                FormattingOptionFlags.TRIM_FINAL_NEWLINES
-        };
+        var options = FormattingOptions (4, true);
+        options.flags =
+            FormattingOptionFlags.TRIM_TRAILING_WHITESPACE |
+            FormattingOptionFlags.INSERT_FINAL_NEWLINE |
+            FormattingOptionFlags.TRIM_FINAL_NEWLINES;
         var formatting = new DocumentFormattingParams (
             make_document (),
             options);
@@ -165,8 +164,8 @@ private void test_formatting_and_rename_params () {
         assert (decoded_prepare.position.line == 9);
         assert (decoded_prepare.position.character == 10);
 
-        var references = new ReferenceContext (false);
-        var decoded_references = new ReferenceContext.from_variant (
+        var references = ReferenceContext (false);
+        var decoded_references = ReferenceContext.from_variant (
             references.to_variant ());
         assert (!decoded_references.include_declaration);
     } catch (Error e) {

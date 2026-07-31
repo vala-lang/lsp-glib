@@ -148,8 +148,8 @@ private void test_inlay_hint () {
             params.to_variant ());
         assert (decoded_params.range.end.line == 10);
 
-        var options = new InlayHintOptions (true);
-        var decoded_options = new InlayHintOptions.from_variant (
+        var options = InlayHintOptions (true);
+        var decoded_options = InlayHintOptions.from_variant (
             options.to_variant ());
         assert (decoded_options.resolve_provider);
     } catch (Error e) {
@@ -386,13 +386,13 @@ private void test_type_hierarchy_and_capabilities () {
         assert (decoded_item.data != null);
         assert ((string) decoded_item.data == "hierarchy-token");
 
-        var document_symbol = new DocumentSymbolClientCaps () {
-            flags = DocumentSymbolClientFlags.DYNAMIC_REGISTRATION |
-                DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS |
-                DocumentSymbolClientFlags.LABEL,
-            symbol_kinds = { SymbolKind.CLASS, SymbolKind.METHOD },
-            supported_tags = SymbolTag.DEPRECATED
-        };
+        var document_symbol = DocumentSymbolClientCaps (
+            DocumentSymbolClientFlags.DYNAMIC_REGISTRATION |
+            DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS |
+            DocumentSymbolClientFlags.LABEL,
+            SymbolKindFlags.CLASS | SymbolKindFlags.METHOD |
+            SymbolKindFlags.TYPE_PARAMETER,
+            SymbolTag.DEPRECATED);
         var text_document = new TextDocumentClientCaps ();
         text_document.synchronization = TextDocumentSyncClientCaps.WILL_SAVE |
             TextDocumentSyncClientCaps.DID_SAVE;
@@ -413,11 +413,13 @@ private void test_type_hierarchy_and_capabilities () {
             decoded_text_document.synchronization);
         assert (TextDocumentSyncClientCaps.DID_SAVE in
             decoded_text_document.synchronization);
-        assert (decoded_text_document.document_symbol != null);
-        var decoded_document_symbol = (!) decoded_text_document.document_symbol;
+        var decoded_document_symbol = decoded_text_document.document_symbol;
         assert (DocumentSymbolClientFlags.HIERARCHICAL_DOCUMENT_SYMBOLS in
             decoded_document_symbol.flags);
-        assert (decoded_document_symbol.symbol_kinds.length == 2);
+        assert (SymbolKindFlags.CLASS in decoded_document_symbol.symbol_kinds);
+        assert (SymbolKindFlags.METHOD in decoded_document_symbol.symbol_kinds);
+        assert (SymbolKindFlags.TYPE_PARAMETER in
+            decoded_document_symbol.symbol_kinds);
         assert (RenameClientCaps.PREPARE_SUPPORT in
             decoded_text_document.rename);
         assert (decoded_text_document.rename_prepare_support_default_behavior ==
@@ -427,9 +429,9 @@ private void test_type_hierarchy_and_capabilities () {
 
         var decoded_server = new ServerCaps.from_variant (
             new ServerCaps () {
-            type_hierarchy = new TypeHierarchyOptions ()
+            type_hierarchy = TypeHierarchyOptions ()
         }.to_variant ());
-        assert (decoded_server.type_hierarchy != null);
+        assert (decoded_server.type_hierarchy.supported);
     } catch (Error e) {
         error ("type hierarchy round trip failed: %s", e.message);
     }

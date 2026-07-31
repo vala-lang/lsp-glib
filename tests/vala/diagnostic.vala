@@ -11,7 +11,7 @@ private void test_round_trip () {
     try {
         var range = Range (Position (1, 2), Position (3, 4));
         var related_range = Range (Position (5, 6), Position (7, 8));
-        var related = DiagnosticRelatedInformation (
+        var related = new DiagnosticRelatedInformation (
             Location (
                 Uri.parse ("file:///related.vala", UriFlags.NONE),
                 related_range),
@@ -22,7 +22,8 @@ private void test_round_trip () {
             code = "V123",
             code_description = new CodeDescription ("https://example.com/V123"),
             source = "vala",
-            tags = { DiagnosticTag.UNNECESSARY, DiagnosticTag.DEPRECATED },
+            tags = DiagnosticTagFlags.UNNECESSARY |
+                DiagnosticTagFlags.DEPRECATED,
             related_information = { related },
             data = new Variant.string ("opaque payload")
         };
@@ -40,10 +41,8 @@ private void test_round_trip () {
         assert (decoded.source == "vala");
         assert (decoded.message == "diagnostic message");
 
-        assert (decoded.tags != null);
-        assert (decoded.tags.length == 2);
-        assert (decoded.tags[0] == DiagnosticTag.UNNECESSARY);
-        assert (decoded.tags[1] == DiagnosticTag.DEPRECATED);
+        assert (DiagnosticTagFlags.UNNECESSARY in decoded.tags);
+        assert (DiagnosticTagFlags.DEPRECATED in decoded.tags);
 
         assert (decoded.related_information != null);
         assert (decoded.related_information.length == 1);

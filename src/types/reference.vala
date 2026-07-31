@@ -23,7 +23,7 @@ namespace Lsp {
      * Whether to include the declaration of the symbol in the
      * references request.
      */
-    public class ReferenceContext {
+    public struct ReferenceContext {
         /**
          * Include the declaration of the symbol itself.
          */

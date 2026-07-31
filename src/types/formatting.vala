@@ -27,15 +27,15 @@ namespace Lsp {
     [Flags]
     public enum FormattingOptionFlags {
         NONE = 0,
-        TRIM_TRAILING_WHITESPACE,
-        INSERT_FINAL_NEWLINE,
-        TRIM_FINAL_NEWLINES;
+        TRIM_TRAILING_WHITESPACE = 1,
+        INSERT_FINAL_NEWLINE = 2,
+        TRIM_FINAL_NEWLINES = 4
     }
 
     /**
      * Formatting options for a {@link textDocument/formatting} request.
      */
-    public class FormattingOptions {
+    public struct FormattingOptions {
         /**
          * Size of a tab in spaces.
          */
@@ -51,11 +51,12 @@ namespace Lsp {
          *
          * @since 3.15.0
          */
-        public FormattingOptionFlags flags { get; set; default = NONE; }
+        public FormattingOptionFlags flags { get; set; }
 
         public FormattingOptions (int tab_size, bool insert_spaces) {
             this.tab_size = tab_size;
             this.insert_spaces = insert_spaces;
+            flags = FormattingOptionFlags.NONE;
         }
 
         public FormattingOptions.from_variant (Variant dict) throws DeserializeError {
@@ -113,7 +114,7 @@ namespace Lsp {
         UriError {
             text_document = TextDocumentIdentifier.from_variant (expect_property (dict,
                 "textDocument", VariantType.VARDICT, "DocumentFormattingParams"));
-            options = new FormattingOptions.from_variant (expect_property (dict, "options",
+            options = FormattingOptions.from_variant (expect_property (dict, "options",
                 VariantType.VARDICT, "DocumentFormattingParams"));
         }
 
@@ -157,7 +158,7 @@ namespace Lsp {
                 "textDocument", VariantType.VARDICT, "DocumentRangeFormattingParams"));
             range = Range.from_variant (expect_property (dict, "range", VariantType.VARDICT,
                 "DocumentRangeFormattingParams"));
-            options = new FormattingOptions.from_variant (expect_property (dict, "options",
+            options = FormattingOptions.from_variant (expect_property (dict, "options",
                 VariantType.VARDICT, "DocumentRangeFormattingParams"));
         }
 

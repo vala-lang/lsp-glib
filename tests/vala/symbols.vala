@@ -151,8 +151,8 @@ private void test_call_hierarchy () {
         assert (decoded_outgoing.to.selection_range.start.line == 8);
         assert (decoded_outgoing.from_ranges.length == 2);
 
-        var options = new CallHierarchyOptions ();
-        var decoded_options = new CallHierarchyOptions.from_variant (
+        var options = CallHierarchyOptions ();
+        var decoded_options = CallHierarchyOptions.from_variant (
             options.to_variant ());
         assert (
             decoded_options.to_variant ().is_of_type (

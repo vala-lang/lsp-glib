@@ -363,23 +363,9 @@ namespace Lsp {
      *
      * @since 3.17.0
      */
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_inlay_hint_options_ref",
-        unref_function = "lsp_inlay_hint_options_unref")]
-    public class InlayHintOptions {
-        private int ref_count = 1;
-
-        public unowned InlayHintOptions ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
+    public struct InlayHintOptions {
+        /** Whether the capability object is present. */
+        public bool supported { get; private set; }
 
         /**
          * Whether the server supports resolving additional information
@@ -388,14 +374,20 @@ namespace Lsp {
         public bool resolve_provider { get; set; }
 
         public InlayHintOptions (bool resolve_provider = false) {
+            supported = true;
             this.resolve_provider = resolve_provider;
         }
 
         public InlayHintOptions.from_variant (Variant variant) throws DeserializeError {
+            this ();
             Variant? prop = lookup_property (variant, "resolveProvider", VariantType.BOOLEAN,
                 "InlayHintOptions");
             if (prop != null)
                 resolve_provider = (bool) prop;
+        }
+
+        internal bool is_empty () {
+            return !supported;
         }
 
         public Variant to_variant () {

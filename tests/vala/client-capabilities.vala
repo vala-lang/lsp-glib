@@ -32,15 +32,11 @@ private void test_client_capabilities_round_trip () {
             },
             supported_tags = CompletionItemTag.DEPRECATED,
             resolve_properties = { "documentation", "detail" },
-            insert_text_modes = {
-                InsertTextMode.AS_IS,
-                InsertTextMode.ADJUST_INDENTATION
-            },
-            item_kinds = {
-                CompletionItemKind.TEXT,
-                CompletionItemKind.FUNCTION,
-                CompletionItemKind.TYPE_PARAMETER
-            }
+            insert_text_modes = InsertTextModeFlags.AS_IS |
+                InsertTextModeFlags.ADJUST_INDENTATION,
+            item_kinds = CompletionItemKindFlags.TEXT |
+                CompletionItemKindFlags.FUNCTION |
+                CompletionItemKindFlags.TYPE_PARAMETER
         };
         var workspace = WorkspaceClientCaps ();
         workspace.flags = WorkspaceClientFlags.APPLY_EDIT;
@@ -98,16 +94,13 @@ private void test_client_capabilities_round_trip () {
         assert (CompletionClientFlags.INSERT_REPLACE in decoded_completion.flags);
         assert (decoded_completion.resolve_properties != null);
         assert (decoded_completion.resolve_properties.length == 2);
-        assert (decoded_completion.insert_text_modes != null);
-        assert (decoded_completion.insert_text_modes.length == 2);
-        assert (
-            decoded_completion.insert_text_modes[1] ==
-            InsertTextMode.ADJUST_INDENTATION);
-        assert (decoded_completion.item_kinds != null);
-        assert (decoded_completion.item_kinds.length == 3);
-        assert (
-            decoded_completion.item_kinds[2] ==
-            CompletionItemKind.TYPE_PARAMETER);
+        assert (InsertTextModeFlags.AS_IS in decoded_completion.insert_text_modes);
+        assert (InsertTextModeFlags.ADJUST_INDENTATION in
+            decoded_completion.insert_text_modes);
+        assert (CompletionItemKindFlags.TEXT in decoded_completion.item_kinds);
+        assert (CompletionItemKindFlags.FUNCTION in decoded_completion.item_kinds);
+        assert (CompletionItemKindFlags.TYPE_PARAMETER in
+            decoded_completion.item_kinds);
         assert (CompletionClientFlags.CONTEXT in decoded_completion.flags);
         assert (CompletionClientFlags.LABEL_DETAILS in decoded_completion.flags);
     } catch (DeserializeError e) {
@@ -141,7 +134,20 @@ private void test_failure_handling_default () {
 
 private void test_flag_only_capability_presence () {
     try {
+        var without_symbols = new TextDocumentClientCaps ();
+        without_symbols.rename = RenameClientCaps.SUPPORTED;
+        var without_symbols_client = new ClientCaps ();
+        without_symbols_client.text_document = without_symbols;
+        var text_without_symbols = without_symbols_client.to_variant ().lookup_value (
+            "textDocument",
+            VariantType.VARDICT);
+        assert (text_without_symbols != null);
+        assert (text_without_symbols.lookup_value (
+            "documentSymbol",
+            VariantType.VARDICT) == null);
+
         var text_caps = new TextDocumentClientCaps ();
+        text_caps.document_symbol = DocumentSymbolClientCaps ();
         text_caps.rename = RenameClientCaps.SUPPORTED;
         text_caps.type_hierarchy = TypeHierarchyClientCaps.SUPPORTED;
         var original = new ClientCaps ();
@@ -149,12 +155,15 @@ private void test_flag_only_capability_presence () {
         var encoded = original.to_variant ();
         var text_document = encoded.lookup_value ("textDocument", VariantType.VARDICT);
         assert (text_document != null);
+        assert (text_document.lookup_value ("documentSymbol", VariantType.VARDICT) != null);
         assert (text_document.lookup_value ("rename", VariantType.VARDICT) != null);
         assert (text_document.lookup_value ("typeHierarchy", VariantType.VARDICT) != null);
 
         var decoded = new ClientCaps.from_variant (encoded);
         assert (decoded.text_document != null);
         var decoded_text = (!) decoded.text_document;
+        assert (DocumentSymbolClientFlags.SUPPORTED in
+            decoded_text.document_symbol.flags);
         assert (RenameClientCaps.SUPPORTED in decoded_text.rename);
         assert (TypeHierarchyClientCaps.SUPPORTED in decoded_text.type_hierarchy);
     } catch (DeserializeError e) {

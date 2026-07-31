@@ -496,17 +496,15 @@ test_type_hierarchy_and_capabilities_round_trip (void)
 {
   LspRange range = { 0 };
   LspRange selection = { 0 };
-  LspSymbolKind symbol_kinds[] = {
-    LSP_SYMBOL_KIND_CLASS,
-    LSP_SYMBOL_KIND_METHOD,
-  };
   g_autoptr (GError) error = NULL;
   g_autoptr (GUri) uri = parse_uri (
       "file:///workspace/main.vala");
   g_autoptr (GVariant) wire = NULL;
   g_autoptr (LspTypeHierarchyItem) item = NULL;
   g_autoptr (LspTypeHierarchyItem) decoded_item = NULL;
-  g_autoptr (LspDocumentSymbolClientCaps) symbol_caps = NULL;
+  g_autoptr (LspCompletionClientCaps) completion_caps = NULL;
+  LspDocumentSymbolClientCaps symbol_caps = { 0 };
+  LspDocumentSymbolClientCaps decoded_symbol_caps = { 0 };
   LspWorkspaceEditClientCaps workspace_edit = { 0 };
   LspWorkspaceEditClientCaps decoded_workspace_edit = { 0 };
   LspWorkspaceClientCaps workspace_caps = { 0 };
@@ -515,7 +513,8 @@ test_type_hierarchy_and_capabilities_round_trip (void)
   LspTextDocumentClientCaps *decoded_text;
   g_autoptr (LspClientCaps) client_caps = NULL;
   g_autoptr (LspClientCaps) decoded_client = NULL;
-  g_autoptr (LspTypeHierarchyOptions) hierarchy_options = NULL;
+  LspTypeHierarchyOptions hierarchy_options = { 0 };
+  LspTypeHierarchyOptions decoded_hierarchy_options = { 0 };
   g_autoptr (LspServerCaps) server_caps = NULL;
   g_autoptr (LspServerCaps) decoded_server = NULL;
 
@@ -556,17 +555,24 @@ test_type_hierarchy_and_capabilities_round_trip (void)
       ==,
       "hierarchy-token");
 
-  symbol_caps = lsp_document_symbol_client_caps_new ();
-  lsp_document_symbol_client_caps_set_flags (
-      symbol_caps,
-      LSP_DOCUMENT_SYMBOL_CLIENT_FLAGS_HIERARCHICAL_DOCUMENT_SYMBOLS);
-  lsp_document_symbol_client_caps_set_symbol_kinds (
-      symbol_caps,
-      symbol_kinds,
-      G_N_ELEMENTS (symbol_kinds));
-  lsp_document_symbol_client_caps_set_supported_tags (
-      symbol_caps,
+  lsp_document_symbol_client_caps_init (
+      &symbol_caps,
+      LSP_DOCUMENT_SYMBOL_CLIENT_FLAGS_HIERARCHICAL_DOCUMENT_SYMBOLS,
+      LSP_SYMBOL_KIND_FLAGS_CLASS |
+      LSP_SYMBOL_KIND_FLAGS_METHOD |
+      LSP_SYMBOL_KIND_FLAGS_TYPE_PARAMETER,
       LSP_SYMBOL_TAG_DEPRECATED);
+
+  completion_caps = lsp_completion_client_caps_new ();
+  lsp_completion_client_caps_set_insert_text_modes (
+      completion_caps,
+      LSP_INSERT_TEXT_MODE_FLAGS_AS_IS |
+      LSP_INSERT_TEXT_MODE_FLAGS_ADJUST_INDENTATION);
+  lsp_completion_client_caps_set_item_kinds (
+      completion_caps,
+      LSP_COMPLETION_ITEM_KIND_FLAGS_TEXT |
+      LSP_COMPLETION_ITEM_KIND_FLAGS_FUNCTION |
+      LSP_COMPLETION_ITEM_KIND_FLAGS_TYPE_PARAMETER);
 
   lsp_workspace_edit_client_caps_init (
       &workspace_edit,
@@ -585,9 +591,12 @@ test_type_hierarchy_and_capabilities_round_trip (void)
       text_caps,
       LSP_TEXT_DOCUMENT_SYNC_CLIENT_CAPS_WILL_SAVE |
       LSP_TEXT_DOCUMENT_SYNC_CLIENT_CAPS_DID_SAVE);
+  lsp_text_document_client_caps_set_completion (
+      text_caps,
+      completion_caps);
   lsp_text_document_client_caps_set_document_symbol (
       text_caps,
-      symbol_caps);
+      &symbol_caps);
   lsp_text_document_client_caps_set_rename (
       text_caps,
       LSP_RENAME_CLIENT_CAPS_SUPPORTED |
@@ -625,10 +634,24 @@ test_type_hierarchy_and_capabilities_round_trip (void)
       lsp_text_document_client_caps_get_synchronization (
           decoded_text));
   g_assert_true (
+      LSP_INSERT_TEXT_MODE_FLAGS_ADJUST_INDENTATION &
+      lsp_completion_client_caps_get_insert_text_modes (
+          lsp_text_document_client_caps_get_completion (decoded_text)));
+  g_assert_true (
+      LSP_COMPLETION_ITEM_KIND_FLAGS_TYPE_PARAMETER &
+      lsp_completion_client_caps_get_item_kinds (
+          lsp_text_document_client_caps_get_completion (decoded_text)));
+  lsp_text_document_client_caps_get_document_symbol (
+      decoded_text,
+      &decoded_symbol_caps);
+  g_assert_true (
       LSP_DOCUMENT_SYMBOL_CLIENT_FLAGS_HIERARCHICAL_DOCUMENT_SYMBOLS &
       lsp_document_symbol_client_caps_get_flags (
-          lsp_text_document_client_caps_get_document_symbol (
-              decoded_text)));
+          &decoded_symbol_caps));
+  g_assert_true (
+      LSP_SYMBOL_KIND_FLAGS_TYPE_PARAMETER &
+      lsp_document_symbol_client_caps_get_symbol_kinds (
+          &decoded_symbol_caps));
   g_assert_true (
       LSP_RENAME_CLIENT_CAPS_PREPARE_SUPPORT &
       lsp_text_document_client_caps_get_rename (decoded_text));
@@ -637,17 +660,21 @@ test_type_hierarchy_and_capabilities_round_trip (void)
       lsp_text_document_client_caps_get_type_hierarchy (
           decoded_text));
 
-  hierarchy_options = lsp_type_hierarchy_options_new ();
+  lsp_type_hierarchy_options_init (&hierarchy_options);
   server_caps = lsp_server_caps_new ();
   lsp_server_caps_set_type_hierarchy (
       server_caps,
-      hierarchy_options);
+      &hierarchy_options);
   g_clear_pointer (&wire, g_variant_unref);
   wire = lsp_server_caps_to_variant (server_caps);
   decoded_server = lsp_server_caps_new_from_variant (wire, &error);
   g_assert_no_error (error);
-  g_assert_nonnull (
-      lsp_server_caps_get_type_hierarchy (decoded_server));
+  lsp_server_caps_get_type_hierarchy (
+      decoded_server,
+      &decoded_hierarchy_options);
+  g_assert_true (
+      lsp_type_hierarchy_options_get_supported (
+          &decoded_hierarchy_options));
 }
 
 static void

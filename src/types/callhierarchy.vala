@@ -276,28 +276,23 @@ namespace Lsp {
     /**
      * Options for call hierarchy support.
      */
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_call_hierarchy_options_ref",
-        unref_function = "lsp_call_hierarchy_options_unref")]
-    public class CallHierarchyOptions {
-        private int ref_count = 1;
-
-        public unowned CallHierarchyOptions ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
+    public struct CallHierarchyOptions {
+        /** Whether the capability object is present. */
+        public bool supported { get; private set; }
 
         public CallHierarchyOptions () {
+            supported = true;
         }
 
         public CallHierarchyOptions.from_variant (Variant variant) throws DeserializeError {
+            this ();
+            if (!variant.is_of_type (VariantType.VARDICT))
+                throw new DeserializeError.INVALID_TYPE (
+                    "CallHierarchyOptions must be a dictionary");
+        }
+
+        internal bool is_empty () {
+            return !supported;
         }
 
         public Variant to_variant () {

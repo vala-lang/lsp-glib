@@ -158,23 +158,9 @@ namespace Lsp {
         }
     }
 
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_code_lens_options_ref",
-        unref_function = "lsp_code_lens_options_unref")]
-    public class CodeLensOptions {
-        private int ref_count = 1;
-
-        public unowned CodeLensOptions ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
+    public struct CodeLensOptions {
+        /** Whether the capability object is present. */
+        public bool supported { get; private set; }
 
         /**
          * Code lens has a resolve provider as well.
@@ -182,15 +168,21 @@ namespace Lsp {
         public bool supports_resolve { get; set; }
 
         public CodeLensOptions (bool supports_resolve) {
+            supported = true;
             this.supports_resolve = supports_resolve;
         }
 
         public CodeLensOptions.from_variant (Variant variant) throws DeserializeError {
+            this (false);
             Variant? prop = null;
 
             if ((prop = lookup_property (variant, "resolveProvider", VariantType.BOOLEAN,
                 "CodeLensOptions")) != null)
                 supports_resolve = (bool) prop;
+        }
+
+        internal bool is_empty () {
+            return !supported;
         }
 
         public Variant to_variant () {
@@ -202,23 +194,9 @@ namespace Lsp {
         }
     }
 
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_document_link_options_ref",
-        unref_function = "lsp_document_link_options_unref")]
-    public class DocumentLinkOptions {
-        private int ref_count = 1;
-
-        public unowned DocumentLinkOptions ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
+    public struct DocumentLinkOptions {
+        /** Whether the capability object is present. */
+        public bool supported { get; private set; }
 
         /**
          * Document links have a resolve provider as well.
@@ -226,15 +204,21 @@ namespace Lsp {
         public bool supports_resolve { get; set; }
 
         public DocumentLinkOptions (bool supports_resolve) {
+            supported = true;
             this.supports_resolve = supports_resolve;
         }
 
         public DocumentLinkOptions.from_variant (Variant variant) throws DeserializeError {
+            this (false);
             Variant? prop = null;
 
             if ((prop = lookup_property (variant, "resolveProvider", VariantType.BOOLEAN,
                 "DocumentLinkOptions")) != null)
                 supports_resolve = (bool) prop;
+        }
+
+        internal bool is_empty () {
+            return !supported;
         }
 
         public Variant to_variant () {
@@ -310,22 +294,9 @@ namespace Lsp {
         }
     }
 
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_rename_options_ref", unref_function = "lsp_rename_options_unref")]
-    public class RenameOptions {
-        private int ref_count = 1;
-
-        public unowned RenameOptions ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
+    public struct RenameOptions {
+        /** Whether the capability object is present. */
+        public bool supported { get; private set; }
 
         /**
          * The server supports renames being checked and tested before being
@@ -334,15 +305,21 @@ namespace Lsp {
         public bool supports_prepare { get; set; }
 
         public RenameOptions (bool supports_prepare) {
+            supported = true;
             this.supports_prepare = supports_prepare;
         }
 
         public RenameOptions.from_variant (Variant variant) throws DeserializeError {
+            this (false);
             Variant? prop = null;
 
             if ((prop = lookup_property (variant, "prepareProvider", VariantType.BOOLEAN,
                 "RenameOptions")) != null)
                 supports_prepare = (bool) prop;
+        }
+
+        internal bool is_empty () {
+            return !supported;
         }
 
         public Variant to_variant () {
@@ -441,12 +418,12 @@ namespace Lsp {
         /**
          * The server provides code lens.
          */
-        public CodeLensOptions? code_lens { get; set; }
+        public CodeLensOptions code_lens { get; set; }
 
         /**
          * The server provides document links.
          */
-        public DocumentLinkOptions? document_link { get; set; }
+        public DocumentLinkOptions document_link { get; set; }
 
         /**
          * The server provides document formatting.
@@ -466,26 +443,26 @@ namespace Lsp {
         /**
          * The server provides rename support.
          */
-        public RenameOptions? rename { get; set; }
+        public RenameOptions rename { get; set; }
 
         /**
          * Whether the server provides call hierarchy support.
          */
-        public CallHierarchyOptions? call_hierarchy { get; set; }
+        public CallHierarchyOptions call_hierarchy { get; set; }
 
         /**
          * Whether the server provides type hierarchy support.
          *
          * @since 3.17.0
          */
-        public TypeHierarchyOptions? type_hierarchy { get; set; }
+        public TypeHierarchyOptions type_hierarchy { get; set; }
 
         /**
          * Whether the server provides inlay hint support.
          *
          * @since 3.17.0
          */
-        public InlayHintOptions? inlay_hint { get; set; }
+        public InlayHintOptions inlay_hint { get; set; }
 
         /**
          * The server provides workspace symbol support.
@@ -612,11 +589,11 @@ namespace Lsp {
 
             if ((prop = lookup_property (variant, "codeLensProvider", VariantType.VARDICT,
                 "ServerCaps")) != null)
-                code_lens = new CodeLensOptions.from_variant (prop);
+                code_lens = CodeLensOptions.from_variant (prop);
 
             if ((prop = lookup_property (variant, "documentLinkProvider", VariantType.VARDICT,
                 "ServerCaps")) != null)
-                document_link = new DocumentLinkOptions.from_variant (prop);
+                document_link = DocumentLinkOptions.from_variant (prop);
 
             if ((prop = lookup_property (variant, "documentFormattingProvider", VariantType.ANY,
                 "ServerCaps")) != null) {
@@ -647,28 +624,49 @@ namespace Lsp {
                 document_on_type_formatting =
                     new DocumentOnTypeFormattingOptions.from_variant (prop);
 
-            if ((prop = lookup_property (variant, "renameProvider", VariantType.VARDICT,
-                "ServerCaps")) != null)
-                rename = new RenameOptions.from_variant (prop);
+            if ((prop = lookup_property (variant, "renameProvider", VariantType.ANY,
+                "ServerCaps")) != null) {
+                if (prop.is_of_type (VariantType.VARDICT))
+                    rename = RenameOptions.from_variant (prop);
+                else if (prop.is_of_type (VariantType.BOOLEAN) && (bool) prop)
+                    rename = RenameOptions (false);
+                else if (!prop.is_of_type (VariantType.BOOLEAN))
+                    throw new DeserializeError.INVALID_TYPE (
+                        "ServerCaps.renameProvider must be a boolean or an object");
+            }
 
-            if ((prop = lookup_property (variant, "callHierarchyProvider", VariantType.VARDICT,
-                "ServerCaps")) != null)
-                call_hierarchy = new CallHierarchyOptions.from_variant (prop);
+            if ((prop = lookup_property (variant, "callHierarchyProvider", VariantType.ANY,
+                "ServerCaps")) != null) {
+                if (prop.is_of_type (VariantType.VARDICT))
+                    call_hierarchy = CallHierarchyOptions.from_variant (prop);
+                else if (prop.is_of_type (VariantType.BOOLEAN) && (bool) prop)
+                    call_hierarchy = CallHierarchyOptions ();
+                else if (!prop.is_of_type (VariantType.BOOLEAN))
+                    throw new DeserializeError.INVALID_TYPE (
+                        "ServerCaps.callHierarchyProvider must be a boolean or an object");
+            }
 
             if ((prop = lookup_property (variant, "typeHierarchyProvider", VariantType.ANY,
                 "ServerCaps")) != null) {
                 if (prop.is_of_type (VariantType.VARDICT))
-                    type_hierarchy = new TypeHierarchyOptions.from_variant (prop);
+                    type_hierarchy = TypeHierarchyOptions.from_variant (prop);
                 else if (prop.is_of_type (VariantType.BOOLEAN) && (bool) prop)
-                    type_hierarchy = new TypeHierarchyOptions ();
+                    type_hierarchy = TypeHierarchyOptions ();
                 else if (!prop.is_of_type (VariantType.BOOLEAN))
                     throw new DeserializeError.INVALID_TYPE (
                         "ServerCaps.typeHierarchyProvider must be a boolean or an object");
             }
 
-            if ((prop = lookup_property (variant, "inlayHintProvider", VariantType.VARDICT,
-                "ServerCaps")) != null)
-                inlay_hint = new InlayHintOptions.from_variant (prop);
+            if ((prop = lookup_property (variant, "inlayHintProvider", VariantType.ANY,
+                "ServerCaps")) != null) {
+                if (prop.is_of_type (VariantType.VARDICT))
+                    inlay_hint = InlayHintOptions.from_variant (prop);
+                else if (prop.is_of_type (VariantType.BOOLEAN) && (bool) prop)
+                    inlay_hint = InlayHintOptions ();
+                else if (!prop.is_of_type (VariantType.BOOLEAN))
+                    throw new DeserializeError.INVALID_TYPE (
+                        "ServerCaps.inlayHintProvider must be a boolean or an object");
+            }
 
             if ((prop = lookup_property (variant, "workspaceSymbolProvider", VariantType.BOOLEAN,
                 "ServerCaps")) != null)
@@ -692,22 +690,22 @@ namespace Lsp {
             dict.insert_value ("documentHighlightProvider", document_highlight);
             dict.insert_value ("documentSymbolProvider", document_symbol);
             dict.insert_value ("codeActionProvider", code_action);
-            if (code_lens != null)
+            if (!code_lens.is_empty ())
                 dict.insert_value ("codeLensProvider", code_lens.to_variant ());
-            if (document_link != null)
+            if (!document_link.is_empty ())
                 dict.insert_value ("documentLinkProvider", document_link.to_variant ());
             dict.insert_value ("documentFormattingProvider", document_formatting);
             dict.insert_value ("documentRangeFormattingProvider", document_range_formatting);
             if (document_on_type_formatting != null)
                 dict.insert_value ("documentOnTypeFormattingProvider",
                     document_on_type_formatting.to_variant ());
-            if (rename != null)
+            if (!rename.is_empty ())
                 dict.insert_value ("renameProvider", rename.to_variant ());
-            if (call_hierarchy != null)
+            if (!call_hierarchy.is_empty ())
                 dict.insert_value ("callHierarchyProvider", call_hierarchy.to_variant ());
-            if (type_hierarchy != null)
+            if (!type_hierarchy.is_empty ())
                 dict.insert_value ("typeHierarchyProvider", type_hierarchy.to_variant ());
-            if (inlay_hint != null)
+            if (!inlay_hint.is_empty ())
                 dict.insert_value ("inlayHintProvider", inlay_hint.to_variant ());
             dict.insert_value ("workspaceSymbolProvider", workspace_symbol);
 

@@ -49,6 +49,16 @@ namespace Lsp {
         ADJUST_INDENTATION  = 2
     }
 
+    /**
+     * A set of {@link InsertTextMode} values supported by a client.
+     */
+    [Flags]
+    public enum InsertTextModeFlags {
+        NONE = 0,
+        AS_IS = 1,
+        ADJUST_INDENTATION = 2
+    }
+
     public enum InsertTextFormat {
         UNSET       = 0,
 
@@ -98,6 +108,40 @@ namespace Lsp {
         EVENT           = 23,
         OPERATOR        = 24,
         TYPE_PARAMETER  = 25
+    }
+
+    /**
+     * A set of {@link CompletionItemKind} values supported by a client.
+     * Protocol value `n` maps to bit `1 << (n - 1)`.
+     */
+    [Flags]
+    public enum CompletionItemKindFlags {
+        NONE = 0,
+        TEXT = 1,
+        METHOD = 2,
+        FUNCTION = 4,
+        CONSTRUCTOR = 8,
+        FIELD = 16,
+        VARIABLE = 32,
+        CLASS = 64,
+        INTERFACE = 128,
+        MODULE = 256,
+        PROPERTY = 512,
+        UNIT = 1024,
+        VALUE = 2048,
+        ENUM = 4096,
+        KEYWORD = 8192,
+        SNIPPET = 16384,
+        COLOR = 32768,
+        FILE = 65536,
+        REFERENCE = 131072,
+        FOLDER = 262144,
+        ENUM_MEMBER = 524288,
+        CONSTANT = 1048576,
+        STRUCT = 2097152,
+        EVENT = 4194304,
+        OPERATOR = 8388608,
+        TYPE_PARAMETER = 16777216
     }
 
     [Flags]

@@ -347,7 +347,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     Location[]? refs = yield references_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant),
-                        new ReferenceContext.from_variant (ctx_variant));
+                        ReferenceContext.from_variant (ctx_variant));
                     if (refs == null) {
                         yield reply_result_async (client, id, null, request_cancellable);
                     } else {

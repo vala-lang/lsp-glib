@@ -44,10 +44,8 @@ class DiagnosticTest(unittest.TestCase):
         original.set_code("V123")
         original.set_source("vala")
         original.set_tags(
-            [
-                Lsp.DiagnosticTag.UNNECESSARY,
-                Lsp.DiagnosticTag.DEPRECATED,
-            ]
+            Lsp.DiagnosticTagFlags.UNNECESSARY
+            | Lsp.DiagnosticTagFlags.DEPRECATED
         )
 
         related_location = Lsp.Location()
@@ -55,8 +53,10 @@ class DiagnosticTest(unittest.TestCase):
             GLib.Uri.parse("file:///related.vala", GLib.UriFlags.NONE),
             make_range(5, 6, 7, 8),
         )
-        related = Lsp.DiagnosticRelatedInformation()
-        related.init(related_location, "related message")
+        related = Lsp.DiagnosticRelatedInformation.new(
+            related_location,
+            "related message",
+        )
         original.set_related_information([related])
         original.set_data(GLib.Variant("s", "opaque payload"))
 
@@ -71,12 +71,11 @@ class DiagnosticTest(unittest.TestCase):
         self.assertEqual(decoded.get_code(), "V123")
         self.assertEqual(decoded.get_source(), "vala")
         self.assertEqual(decoded.get_message(), "diagnostic message")
-        self.assertEqual(
-            decoded.get_tags(),
-            [
-                Lsp.DiagnosticTag.UNNECESSARY,
-                Lsp.DiagnosticTag.DEPRECATED,
-            ],
+        self.assertTrue(
+            decoded.get_tags() & Lsp.DiagnosticTagFlags.UNNECESSARY
+        )
+        self.assertTrue(
+            decoded.get_tags() & Lsp.DiagnosticTagFlags.DEPRECATED
         )
 
         decoded_related = decoded.get_related_information()

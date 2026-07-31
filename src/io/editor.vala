@@ -659,7 +659,7 @@ public class Lsp.Editor : Jsonrpc.Server {
 
         DocumentHighlight[] items = {};
         foreach (var item in return_value)
-            items += new DocumentHighlight.from_variant (
+            items += DocumentHighlight.from_variant (
                 expect_array_element (
                     item,
                     VariantType.VARDICT,

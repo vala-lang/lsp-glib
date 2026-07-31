@@ -115,32 +115,23 @@ namespace Lsp {
      *
      * @since 3.17.0
      */
-    [Compact (opaque = true)]
-    [CCode (lower_case_cprefix = "lsp_type_hierarchy_options_",
-        ref_function = "lsp_type_hierarchy_options_ref",
-        unref_function = "lsp_type_hierarchy_options_unref")]
-    public class TypeHierarchyOptions {
-        private int ref_count = 1;
-
-        public unowned TypeHierarchyOptions ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
+    public struct TypeHierarchyOptions {
+        /** Whether the capability object is present. */
+        public bool supported { get; private set; }
 
         public TypeHierarchyOptions () {
+            supported = true;
         }
 
         public TypeHierarchyOptions.from_variant (Variant variant) throws DeserializeError {
+            this ();
             if (!variant.is_of_type (VariantType.VARDICT))
                 throw new DeserializeError.INVALID_TYPE (
                     "TypeHierarchyOptions must be a dictionary");
+        }
+
+        internal bool is_empty () {
+            return !supported;
         }
 
         public Variant to_variant () {

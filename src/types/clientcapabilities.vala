@@ -335,7 +335,10 @@ namespace Lsp {
     }
 
     /**
-     * Completion-specific client capabilities
+     * Completion-specific client capabilities.
+     *
+     * This remains ref-counted because documentation formats are ordered by
+     * preference and resolve property names are extensible protocol strings.
      */
     [Compact (opaque = true)]
     [CCode (ref_function = "lsp_completion_client_caps_ref",
@@ -396,7 +399,7 @@ namespace Lsp {
          *
          * @since 3.16.0
          */
-        public InsertTextMode[]? insert_text_modes { get; set; }
+        public InsertTextModeFlags insert_text_modes { get; set; default = NONE; }
 
         /**
          * The completion item kind values the client supports. When this
@@ -408,7 +411,7 @@ namespace Lsp {
          * completion items kinds from `Text` to `Reference` as defined in the
          * initial version of the protocol.
          */
-        public CompletionItemKind[]? item_kinds { get; set; }
+        public CompletionItemKindFlags item_kinds { get; set; default = NONE; }
 
         public CompletionClientCaps.from_variant (Variant dict) throws DeserializeError {
             Variant? prop;
@@ -495,12 +498,16 @@ namespace Lsp {
                 VariantType.VARDICT)) != null) {
                 var values = prop.lookup_value ("valueSet", VariantType.ARRAY);
                 if (values != null) {
-                    InsertTextMode[] modes = {};
-                    foreach (var value in values)
-                        modes += (InsertTextMode) (int64) expect_array_element (
+                    InsertTextModeFlags modes = InsertTextModeFlags.NONE;
+                    foreach (var value in values) {
+                        var mode = (int) (int64) expect_array_element (
                             value,
                             VariantType.INT64,
                             "CompletionClientCaps.insertTextModeSupport.valueSet");
+                        if (mode >= InsertTextMode.AS_IS &&
+                            mode <= InsertTextMode.ADJUST_INDENTATION)
+                            modes |= (InsertTextModeFlags) (1 << (mode - 1));
+                    }
                     insert_text_modes = modes;
                 }
             }
@@ -508,12 +515,16 @@ namespace Lsp {
             if ((prop = dict.lookup_value ("completionItemKind", VariantType.VARDICT)) != null) {
                 var values = prop.lookup_value ("valueSet", VariantType.ARRAY);
                 if (values != null) {
-                    CompletionItemKind[] kinds = {};
-                    foreach (var value in values)
-                        kinds += (CompletionItemKind) (int64) expect_array_element (
+                    CompletionItemKindFlags kinds = CompletionItemKindFlags.NONE;
+                    foreach (var value in values) {
+                        var kind = (int) (int64) expect_array_element (
                             value,
                             VariantType.INT64,
                             "CompletionClientCaps.completionItemKind.valueSet");
+                        if (kind >= CompletionItemKind.TEXT &&
+                            kind <= CompletionItemKind.TYPE_PARAMETER)
+                            kinds |= (CompletionItemKindFlags) (1 << (kind - 1));
+                    }
                     item_kinds = kinds;
                 }
             }
@@ -578,11 +589,13 @@ namespace Lsp {
                 item.insert_value ("tagSupport", tag_support.end ());
                 has_item_caps = true;
             }
-            if (insert_text_modes != null) {
+            if (insert_text_modes != InsertTextModeFlags.NONE) {
                 var mode_support = new VariantDict ();
                 Variant[] modes = {};
-                foreach (var mode in insert_text_modes)
-                    modes += new Variant.int64 (mode);
+                if (InsertTextModeFlags.AS_IS in insert_text_modes)
+                    modes += new Variant.int64 (InsertTextMode.AS_IS);
+                if (InsertTextModeFlags.ADJUST_INDENTATION in insert_text_modes)
+                    modes += new Variant.int64 (InsertTextMode.ADJUST_INDENTATION);
                 mode_support.insert_value ("valueSet", modes);
                 item.insert_value (
                     "insertTextModeSupport",
@@ -592,11 +605,16 @@ namespace Lsp {
             if (has_item_caps)
                 dict.insert_value ("completionItem", item.end ());
 
-            if (item_kinds != null) {
+            if (item_kinds != CompletionItemKindFlags.NONE) {
                 var kind_support = new VariantDict ();
                 Variant[] kinds = {};
-                foreach (var kind in item_kinds)
-                    kinds += new Variant.int64 (kind);
+                for (int kind = CompletionItemKind.TEXT;
+                     kind <= CompletionItemKind.TYPE_PARAMETER;
+                     kind++) {
+                    var flag = (CompletionItemKindFlags) (1 << (kind - 1));
+                    if (flag in item_kinds)
+                        kinds += new Variant.int64 (kind);
+                }
                 kind_support.insert_value ("valueSet", kinds);
                 dict.insert_value (
                     "completionItemKind",
@@ -615,38 +633,39 @@ namespace Lsp {
         NONE = 0,
         DYNAMIC_REGISTRATION = 1,
         HIERARCHICAL_DOCUMENT_SYMBOLS = 2,
-        LABEL = 4
+        LABEL = 4,
+
+        /**
+         * Records the presence of the protocol capability object. Struct
+         * constructors set this automatically; an all-zero embedded value is
+         * absent.
+         */
+        SUPPORTED = 8
     }
 
     /**
      * Client capabilities for document symbols.
+     *
+     * Kind support is stored as a bitfield, so this value can be embedded in
+     * {@link TextDocumentClientCaps} without an allocation.
      */
-    [Compact (opaque = true)]
-    [CCode (ref_function = "lsp_document_symbol_client_caps_ref",
-        unref_function = "lsp_document_symbol_client_caps_unref")]
-    public class DocumentSymbolClientCaps {
-        private int ref_count = 1;
+    public struct DocumentSymbolClientCaps {
+        public DocumentSymbolClientFlags flags { get; set; }
+        public SymbolKindFlags symbol_kinds { get; set; }
+        public SymbolTag supported_tags { get; set; }
 
-        public unowned DocumentSymbolClientCaps ref () {
-            AtomicInt.add (ref this.ref_count, 1);
-            return this;
-        }
-
-        public void unref () {
-            if (AtomicInt.dec_and_test (ref this.ref_count))
-                this.free ();
-        }
-
-        private extern void free ();
-
-        public DocumentSymbolClientFlags flags { get; set; default = NONE; }
-        public SymbolKind[]? symbol_kinds { get; set; }
-        public SymbolTag supported_tags { get; set; default = UNSET; }
-
-        public DocumentSymbolClientCaps () {
+        public DocumentSymbolClientCaps (
+            DocumentSymbolClientFlags flags = DocumentSymbolClientFlags.NONE,
+            SymbolKindFlags symbol_kinds = SymbolKindFlags.NONE,
+            SymbolTag supported_tags = SymbolTag.UNSET
+        ) {
+            this.flags = flags | DocumentSymbolClientFlags.SUPPORTED;
+            this.symbol_kinds = symbol_kinds;
+            this.supported_tags = supported_tags;
         }
 
         public DocumentSymbolClientCaps.from_variant (Variant dict) throws DeserializeError {
+            this ();
             Variant? prop;
 
             if ((prop = lookup_property (dict, "dynamicRegistration", VariantType.BOOLEAN,
@@ -657,12 +676,15 @@ namespace Lsp {
                 "DocumentSymbolClientCaps")) != null) {
                 var values = prop.lookup_value ("valueSet", VariantType.ARRAY);
                 if (values != null) {
-                    SymbolKind[] kinds = {};
-                    foreach (var value in values)
-                        kinds += (SymbolKind) (int64) expect_array_element (
+                    SymbolKindFlags kinds = SymbolKindFlags.NONE;
+                    foreach (var value in values) {
+                        var kind = (int) (int64) expect_array_element (
                             value,
                             VariantType.INT64,
                             "DocumentSymbolClientCaps.symbolKind.valueSet");
+                        if (kind >= SymbolKind.FILE && kind <= SymbolKind.TYPE_PARAMETER)
+                            kinds |= (SymbolKindFlags) (1 << (kind - 1));
+                    }
                     symbol_kinds = kinds;
                 }
             }
@@ -692,14 +714,23 @@ namespace Lsp {
                 flags |= DocumentSymbolClientFlags.LABEL;
         }
 
+        internal bool is_empty () {
+            return flags == DocumentSymbolClientFlags.NONE &&
+                   symbol_kinds == SymbolKindFlags.NONE &&
+                   supported_tags == SymbolTag.UNSET;
+        }
+
         public Variant to_variant () {
             var dict = new VariantDict ();
             if (DocumentSymbolClientFlags.DYNAMIC_REGISTRATION in flags)
                 dict.insert_value ("dynamicRegistration", true);
-            if (symbol_kinds != null) {
+            if (symbol_kinds != SymbolKindFlags.NONE) {
                 Variant[] values = {};
-                foreach (var kind in symbol_kinds)
-                    values += new Variant.int64 (kind);
+                for (int kind = SymbolKind.FILE; kind <= SymbolKind.TYPE_PARAMETER; kind++) {
+                    var flag = (SymbolKindFlags) (1 << (kind - 1));
+                    if (flag in symbol_kinds)
+                        values += new Variant.int64 (kind);
+                }
                 var symbol_kind = new VariantDict ();
                 symbol_kind.insert_value ("valueSet", values);
                 dict.insert_value ("symbolKind", symbol_kind.end ());
@@ -780,8 +811,8 @@ namespace Lsp {
     /**
      * Text document-specific client capabilities.
      *
-     * This remains ref-counted because completion and document symbol
-     * capabilities contain owned arrays.
+     * This remains ref-counted because completion capabilities contain owned
+     * arrays.
      */
     [Compact (opaque = true)]
     [CCode (ref_function = "lsp_text_document_client_caps_ref",
@@ -808,7 +839,7 @@ namespace Lsp {
         }
 
         public CompletionClientCaps? completion { get; set; }
-        public DocumentSymbolClientCaps? document_symbol { get; set; }
+        public DocumentSymbolClientCaps document_symbol { get; set; }
         public RenameClientCaps rename { get; set; default = NONE; }
         public PrepareSupportDefaultBehavior rename_prepare_support_default_behavior {
             get;
@@ -841,7 +872,7 @@ namespace Lsp {
             if ((prop = dict.lookup_value ("completion", VariantType.VARDICT)) != null)
                 completion = new CompletionClientCaps.from_variant (prop);
             if ((prop = dict.lookup_value ("documentSymbol", VariantType.VARDICT)) != null)
-                document_symbol = new DocumentSymbolClientCaps.from_variant (prop);
+                document_symbol = DocumentSymbolClientCaps.from_variant (prop);
             if ((prop = dict.lookup_value ("rename", VariantType.VARDICT)) != null) {
                 rename = RenameClientCaps.SUPPORTED;
                 Variant? rename_prop;
@@ -871,7 +902,7 @@ namespace Lsp {
         internal bool is_empty () {
             return synchronization == TextDocumentSyncClientCaps.NONE &&
                    completion == null &&
-                   document_symbol == null &&
+                   document_symbol.is_empty () &&
                    rename == RenameClientCaps.NONE &&
                    rename_prepare_support_default_behavior ==
                    PrepareSupportDefaultBehavior.UNSET &&
@@ -894,7 +925,7 @@ namespace Lsp {
 
             if (completion != null)
                 dict.insert_value ("completion", completion.to_variant ());
-            if (document_symbol != null)
+            if (!document_symbol.is_empty ())
                 dict.insert_value ("documentSymbol", document_symbol.to_variant ());
             if (rename != RenameClientCaps.NONE ||
                 rename_prepare_support_default_behavior !=
