@@ -267,6 +267,192 @@ private void test_code_action_union () {
     }
 }
 
+private void test_document_symbol_result () {
+    try {
+        var range = make_range (0, 0, 4, 1);
+        var selection = make_range (0, 6, 0, 13);
+        DocumentSymbol[] hierarchical = {
+            new DocumentSymbol (
+                "Example",
+                SymbolKind.CLASS,
+                range,
+                selection)
+        };
+        var decoded_hierarchical = new DocumentSymbolResult.from_variant (
+            new DocumentSymbolResult.for_document_symbols (
+                hierarchical).to_variant ());
+        assert (decoded_hierarchical.document_symbols != null);
+        assert (decoded_hierarchical.document_symbols.length == 1);
+        assert (decoded_hierarchical.document_symbols[0].name == "Example");
+        assert (decoded_hierarchical.symbol_information == null);
+
+        SymbolInformation[] flat = {
+            new SymbolInformation (
+                "Example",
+                SymbolKind.CLASS,
+                Location (
+                    parse_uri ("file:///workspace/main.vala"),
+                    range))
+        };
+        var decoded_flat = new DocumentSymbolResult.from_variant (
+            new DocumentSymbolResult.for_symbol_information (
+                flat).to_variant ());
+        assert (decoded_flat.document_symbols == null);
+        assert (decoded_flat.symbol_information != null);
+        assert (decoded_flat.symbol_information.length == 1);
+        assert (decoded_flat.symbol_information[0].name == "Example");
+
+        var decoded_empty = new DocumentSymbolResult.from_variant (
+            new Variant.array (VariantType.VARDICT, {}));
+        assert (decoded_empty.document_symbols != null);
+        assert (decoded_empty.document_symbols.length == 0);
+        assert (decoded_empty.symbol_information == null);
+
+        try {
+            new DocumentSymbolResult.from_variant (
+                new Variant.array (
+                    VariantType.VARDICT,
+            {
+                hierarchical[0].to_variant (),
+                flat[0].to_variant ()
+            }));
+            assert_not_reached ();
+        } catch (DeserializeError e) {
+            assert (e.code == DeserializeError.UNEXPECTED_ELEMENT);
+        }
+    } catch (Error e) {
+        error ("document symbol result round trip failed: %s", e.message);
+    }
+}
+
+private void test_prepare_rename_result () {
+    try {
+        var range = make_range (3, 4, 3, 11);
+        var plain = PrepareRenameResult.for_range (range);
+        var decoded_plain = PrepareRenameResult.from_variant (
+            plain.to_variant ());
+        assert (decoded_plain.has_range);
+        assert (decoded_plain.range.start.character == 4);
+        assert (decoded_plain.placeholder == null);
+
+        var placeholder = PrepareRenameResult.for_range (
+            range,
+            "old_name");
+        var decoded_placeholder = PrepareRenameResult.from_variant (
+            placeholder.to_variant ());
+        assert (decoded_placeholder.has_range);
+        assert (decoded_placeholder.placeholder == "old_name");
+
+        var use_default = PrepareRenameResult.for_default_behavior ();
+        var decoded_default = PrepareRenameResult.from_variant (
+            use_default.to_variant ());
+        assert (!decoded_default.has_range);
+        assert (decoded_default.default_behavior);
+
+        var invalid = new VariantDict ();
+        invalid.insert_value ("defaultBehavior", true);
+        invalid.insert_value ("range", range.to_variant ());
+        try {
+            PrepareRenameResult.from_variant (invalid.end ());
+            assert_not_reached ();
+        } catch (DeserializeError e) {
+            assert (e.code == DeserializeError.UNEXPECTED_ELEMENT);
+        }
+    } catch (Error e) {
+        error ("prepare rename result round trip failed: %s", e.message);
+    }
+}
+
+private void test_type_hierarchy_and_capabilities () {
+    try {
+        var range = make_range (0, 0, 5, 1);
+        var selection = make_range (0, 6, 0, 13);
+        var item = new TypeHierarchyItem (
+            "Example",
+            SymbolKind.CLASS,
+            parse_uri ("file:///workspace/main.vala"),
+            range,
+            selection,
+            "class Example",
+            SymbolTag.DEPRECATED) {
+            data = new Variant.string ("hierarchy-token")
+        };
+        var decoded_item = new TypeHierarchyItem.from_variant (
+            item.to_variant ());
+        assert (decoded_item.name == "Example");
+        assert (decoded_item.kind == SymbolKind.CLASS);
+        assert (SymbolTag.DEPRECATED in decoded_item.tags);
+        assert (decoded_item.selection_range.end.character == 13);
+        assert (decoded_item.data != null);
+        assert ((string) decoded_item.data == "hierarchy-token");
+
+        var text_document = new TextDocumentClientCaps () {
+            synchronization = TextDocumentSyncClientCaps.WILL_SAVE |
+                TextDocumentSyncClientCaps.DID_SAVE,
+            document_symbol = new DocumentSymbolClientCaps () {
+                dynamic_registration = true,
+                symbol_kinds = { SymbolKind.CLASS, SymbolKind.METHOD },
+                hierarchical_document_symbol_support = true,
+                supported_tags = SymbolTag.DEPRECATED,
+                label_support = true
+            },
+            rename = new RenameClientCaps () {
+                prepare_support = true,
+                prepare_support_default_behavior =
+                    PrepareSupportDefaultBehavior.IDENTIFIER,
+                honors_change_annotations = true
+            },
+            type_hierarchy = new TypeHierarchyClientCaps () {
+                dynamic_registration = true
+            }
+        };
+        var decoded_client = new ClientCaps.from_variant (
+            new ClientCaps () {
+            text_document = text_document
+        }.to_variant ());
+        assert (decoded_client.text_document != null);
+        assert (TextDocumentSyncClientCaps.WILL_SAVE in
+            decoded_client.text_document.synchronization);
+        assert (TextDocumentSyncClientCaps.DID_SAVE in
+            decoded_client.text_document.synchronization);
+        assert (decoded_client.text_document.document_symbol != null);
+        assert (decoded_client.text_document.document_symbol
+            .hierarchical_document_symbol_support);
+        assert (decoded_client.text_document.document_symbol
+            .symbol_kinds.length == 2);
+        assert (decoded_client.text_document.rename != null);
+        assert (decoded_client.text_document.rename.prepare_support);
+        assert (decoded_client.text_document.rename
+            .prepare_support_default_behavior ==
+            PrepareSupportDefaultBehavior.IDENTIFIER);
+        assert (decoded_client.text_document.type_hierarchy != null);
+        assert (decoded_client.text_document.type_hierarchy
+            .dynamic_registration);
+
+        var decoded_server = new ServerCaps.from_variant (
+            new ServerCaps () {
+            type_hierarchy = new TypeHierarchyOptions ()
+        }.to_variant ());
+        assert (decoded_server.type_hierarchy != null);
+    } catch (Error e) {
+        error ("type hierarchy round trip failed: %s", e.message);
+    }
+}
+
+private void test_protocol_error_values () {
+    assert ((int) ProtocolError.PARSE_ERROR == -32700);
+    assert ((int) ProtocolError.INVALID_REQUEST == -32600);
+    assert ((int) ProtocolError.METHOD_NOT_FOUND == -32601);
+    assert ((int) ProtocolError.INVALID_PARAMS == -32602);
+    assert ((int) ProtocolError.INTERNAL_ERROR == -32603);
+    assert ((int) ProtocolError.SERVER_NOT_INITIALIZED == -32002);
+    assert ((int) ProtocolError.UNKNOWN_ERROR_CODE == -32001);
+    assert ((int) ProtocolError.REQUEST_FAILED == -32803);
+    assert ((int) ProtocolError.SERVER_CANCELLED == -32802);
+    assert ((int) ProtocolError.CONTENT_MODIFIED == -32801);
+    assert ((int) ProtocolError.REQUEST_CANCELLED == -32800);
+}
+
 private int main (string[] args) {
     Test.init (ref args);
     Test.add_func (
@@ -281,5 +467,17 @@ private int main (string[] args) {
     Test.add_func (
         "/serialization/advanced/code-action-union",
         test_code_action_union);
+    Test.add_func (
+        "/serialization/advanced/document-symbol-result",
+        test_document_symbol_result);
+    Test.add_func (
+        "/serialization/advanced/prepare-rename-result",
+        test_prepare_rename_result);
+    Test.add_func (
+        "/serialization/advanced/type-hierarchy-and-capabilities",
+        test_type_hierarchy_and_capabilities);
+    Test.add_func (
+        "/protocol/error-values",
+        test_protocol_error_values);
     return Test.run ();
 }

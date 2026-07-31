@@ -36,6 +36,7 @@ sources = [version_file] + files([
   'types/textdocument.vala',
   'types/textedit.vala',
   'types/trace.vala',
+  'types/typehierarchy.vala',
   'types/workspace.vala',
   'types/workspaceedit.vala',
   'library.vala'
@@ -46,7 +47,7 @@ liblsp_glib = library('lsp-glib-' + API_VERSION,
   vala_header: 'lsp-glib.h',
   vala_vapi: 'lsp-glib-' + API_VERSION + '.vapi',
   vala_gir: 'Lsp-' + API_VERSION + '.gir',
-  dependencies : dependencies,
+  dependencies : vala_dependencies,
   vala_args: [
     '--abi-stability'
     ],
@@ -91,3 +92,13 @@ lsp_glib_dep = declare_dependency(
   dependencies: dependencies,
   include_directories: [include_directories('.')]
 )
+
+# Generated VAPIs are source dependencies in Meson and make C-only targets look
+# like Vala targets. Keep them in a Vala-specific dependency for subprojects.
+lsp_glib_vala_dep = declare_dependency(
+  link_with: liblsp_glib,
+  dependencies: vala_dependencies,
+  include_directories: [include_directories('.')]
+)
+
+meson.override_dependency('lsp-glib-' + API_VERSION, lsp_glib_dep)

@@ -96,4 +96,76 @@ namespace Lsp {
             return dict.end ();
         }
     }
+
+    /**
+     * The result of checking whether a symbol can be renamed.
+     *
+     * When {@link has_range} is false, this represents the protocol's
+     * `defaultBehavior` result. Keeping the range inline avoids allocating it
+     * solely to represent the alternative result shape.
+     */
+    public struct PrepareRenameResult {
+        public Range range;
+        public bool has_range;
+        public string? placeholder;
+        public bool default_behavior;
+
+        public PrepareRenameResult.for_range (Range range, string? placeholder = null) {
+            this.range = range;
+            this.has_range = true;
+            this.placeholder = placeholder;
+            this.default_behavior = false;
+        }
+
+        public PrepareRenameResult.for_default_behavior (bool default_behavior = true) {
+            this.has_range = false;
+            this.placeholder = null;
+            this.default_behavior = default_behavior;
+        }
+
+        public PrepareRenameResult.from_variant (Variant dict) throws DeserializeError {
+            if (!dict.is_of_type (VariantType.VARDICT))
+                throw new DeserializeError.INVALID_TYPE (
+                    "prepare rename result must be a dictionary");
+
+            var default_value = dict.lookup_value ("defaultBehavior", VariantType.BOOLEAN);
+            var nested_range = dict.lookup_value ("range", VariantType.VARDICT);
+
+            if (default_value != null) {
+                if (nested_range != null || dict.lookup_value ("start", null) != null)
+                    throw new DeserializeError.UNEXPECTED_ELEMENT (
+                        "prepare rename result alternatives cannot be mixed");
+                has_range = false;
+                placeholder = null;
+                default_behavior = (bool) default_value;
+            } else if (nested_range != null) {
+                range = Range.from_variant (nested_range);
+                has_range = true;
+                default_behavior = false;
+                var placeholder = dict.lookup_value ("placeholder", VariantType.STRING);
+                this.placeholder = placeholder != null ? (string) placeholder : null;
+            } else {
+                range = Range.from_variant (dict);
+                has_range = true;
+                placeholder = null;
+                default_behavior = false;
+            }
+        }
+
+        public Variant to_variant () {
+            if (!has_range) {
+                var dict = new VariantDict ();
+                dict.insert_value ("defaultBehavior", default_behavior);
+                return dict.end ();
+            }
+
+            if (placeholder == null)
+                return range.to_variant ();
+
+            var dict = new VariantDict ();
+            dict.insert_value ("range", range.to_variant ());
+            dict.insert_value ("placeholder", placeholder);
+            return dict.end ();
+        }
+    }
 }

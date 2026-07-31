@@ -474,6 +474,13 @@ namespace Lsp {
         public CallHierarchyOptions? call_hierarchy { get; set; }
 
         /**
+         * Whether the server provides type hierarchy support.
+         *
+         * @since 3.17.0
+         */
+        public TypeHierarchyOptions? type_hierarchy { get; set; }
+
+        /**
          * Whether the server provides inlay hint support.
          *
          * @since 3.17.0
@@ -648,6 +655,17 @@ namespace Lsp {
                 "ServerCaps")) != null)
                 call_hierarchy = new CallHierarchyOptions.from_variant (prop);
 
+            if ((prop = lookup_property (variant, "typeHierarchyProvider", VariantType.ANY,
+                "ServerCaps")) != null) {
+                if (prop.is_of_type (VariantType.VARDICT))
+                    type_hierarchy = new TypeHierarchyOptions.from_variant (prop);
+                else if (prop.is_of_type (VariantType.BOOLEAN) && (bool) prop)
+                    type_hierarchy = new TypeHierarchyOptions ();
+                else if (!prop.is_of_type (VariantType.BOOLEAN))
+                    throw new DeserializeError.INVALID_TYPE (
+                        "ServerCaps.typeHierarchyProvider must be a boolean or an object");
+            }
+
             if ((prop = lookup_property (variant, "inlayHintProvider", VariantType.VARDICT,
                 "ServerCaps")) != null)
                 inlay_hint = new InlayHintOptions.from_variant (prop);
@@ -687,6 +705,8 @@ namespace Lsp {
                 dict.insert_value ("renameProvider", rename.to_variant ());
             if (call_hierarchy != null)
                 dict.insert_value ("callHierarchyProvider", call_hierarchy.to_variant ());
+            if (type_hierarchy != null)
+                dict.insert_value ("typeHierarchyProvider", type_hierarchy.to_variant ());
             if (inlay_hint != null)
                 dict.insert_value ("inlayHintProvider", inlay_hint.to_variant ());
             dict.insert_value ("workspaceSymbolProvider", workspace_symbol);

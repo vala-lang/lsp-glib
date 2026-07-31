@@ -1,23 +1,18 @@
 using Lsp;
 
 /*
- * Exercise both points where a server implementation can cooperatively
- * observe cancellation: while waiting for its context to settle, and while
- * executing the request handler. A fresh Jsonrpc.Client is used for each case,
- * so the request being cancelled has the initial JSON-RPC id of 1.
+ * Verify that cancelling a request while its handler is suspended produces a
+ * RequestCancelled response. The handler deliberately returns normally after
+ * cancellation so Lsp.Server's final reply check also remains covered.
  */
 
 private class CancellationServer : Lsp.Server {
     public signal void request_waiting ();
 
-    bool wait_in_context_hook;
-    Cancellable? context_cancellable;
-
     public bool handler_called { get; private set; }
 
-    public CancellationServer (MainLoop loop, bool wait_in_context_hook) {
+    public CancellationServer (MainLoop loop) {
         base (loop);
-        this.wait_in_context_hook = wait_in_context_hook;
     }
 
     private async void wait_until_cancelled (Cancellable cancellable) {
@@ -29,18 +24,6 @@ private class CancellationServer : Lsp.Server {
         });
         yield;
         cancellable.disconnect (handler_id);
-    }
-
-    protected override async void wait_for_context_update_async (
-        Cancellable cancellable
-    ) throws Error {
-        context_cancellable = cancellable;
-        if (!wait_in_context_hook)
-            return;
-
-        request_waiting ();
-        yield wait_until_cancelled (cancellable);
-        cancellable.set_error_if_cancelled ();
     }
 
     protected override async InitializeResult initialize_async (
@@ -74,11 +57,10 @@ private class CancellationServer : Lsp.Server {
         string query
     ) throws Error {
         handler_called = true;
-        assert (client.cancellable == context_cancellable);
-
         request_waiting ();
         yield wait_until_cancelled (client.cancellable);
-        client.cancellable.set_error_if_cancelled ();
+        // Returning normally after cancellation must not let a stale success
+        // response escape. Lsp.Server checks again before replying.
         return null;
     }
 
@@ -99,7 +81,7 @@ private async void run_request (Jsonrpc.Client client, MainLoop loop) {
         assert_not_reached ();
     } catch (Error e) {
         assert (e.domain == Jsonrpc.Client.error_quark ());
-        assert (e.code == ErrorCode.REQUEST_CANCELLED);
+        assert (e.code == ProtocolError.REQUEST_CANCELLED);
     }
 
     try {
@@ -110,13 +92,13 @@ private async void run_request (Jsonrpc.Client client, MainLoop loop) {
     loop.quit ();
 }
 
-private void run_cancellation_case (bool wait_in_context_hook) {
+private void run_cancellation_case () {
     IOStream server_connection;
     IOStream client_connection;
     create_test_stream_pair (out server_connection, out client_connection);
 
     var loop = new MainLoop ();
-    var server = new CancellationServer (loop, wait_in_context_hook);
+    var server = new CancellationServer (loop);
     var client = new Jsonrpc.Client (client_connection);
 
     server.accept_io_stream (server_connection);
@@ -151,11 +133,10 @@ private void run_cancellation_case (bool wait_in_context_hook) {
         Source.remove (timeout_id);
 
     assert (!timed_out);
-    assert (server.handler_called != wait_in_context_hook);
+    assert (server.handler_called);
 }
 
 private int main (string[] args) {
-    run_cancellation_case (true);
-    run_cancellation_case (false);
+    run_cancellation_case ();
     return 0;
 }

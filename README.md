@@ -53,14 +53,14 @@ Design ideas:
 - [ ] `codeAction/resolve`
 - [x] `textDocument/publishDiagnostics`
 - [ ] `textDocument/pullDiagnostics`
-- [ ] `textDocument/declaration` (capability field only)
-- [ ] `textDocument/definition` (capability field only)
+- [x] `textDocument/declaration`
+- [x] `textDocument/definition`
 - [ ] `textDocument/typeDefinition` (capability field only)
-- [ ] `textDocument/implementation` (capability field only)
-- [ ] `textDocument/references` (capability field only)
-- [ ] `textDocument/documentHighlight` (capability field only)
-- [ ] `textDocument/documentSymbol` (capability field only)
-- [ ] `textDocument/codeLens` (types only)
+- [x] `textDocument/implementation`
+- [x] `textDocument/references`
+- [x] `textDocument/documentHighlight`
+- [x] `textDocument/documentSymbol`
+- [x] `textDocument/codeLens`
 - [ ] `codeLens/resolve`
 - [ ] `textDocument/foldingRange`
 - [ ] `textDocument/selectionRange`
@@ -68,24 +68,29 @@ Design ideas:
 - [ ] `documentLink/resolve`
 - [ ] `textDocument/documentColor`
 - [ ] `textDocument/colorPresentation`
-- [ ] `textDocument/formatting` (capability field only)
-- [ ] `textDocument/rangeFormatting` (capability field only)
+- [x] `textDocument/formatting`
+- [x] `textDocument/rangeFormatting`
 - [ ] `textDocument/onTypeFormatting` (types only)
-- [ ] `textDocument/rename` (types only)
-- [ ] `textDocument/prepareRename`
+- [x] `textDocument/rename`
+- [x] `textDocument/prepareRename`
 - [ ] `textDocument/semanticTokens`
 - [ ] `textDocument/moniker`
 - [ ] `textDocument/inlineValue`
-- [ ] `textDocument/inlayHint`
-- [ ] `textDocument/prepareCallHierarchy`
-- [ ] `textDocument/prepareTypeHierarchy`
+- [x] `textDocument/inlayHint`
+- [x] `inlayHint/resolve`
+- [x] `textDocument/prepareCallHierarchy`
+- [x] `callHierarchy/incomingCalls`
+- [x] `callHierarchy/outgoingCalls`
+- [x] `textDocument/prepareTypeHierarchy`
+- [x] `typeHierarchy/supertypes`
+- [x] `typeHierarchy/subtypes`
 - [ ] `textDocument/linkedEditingRange`
 
 #### Workspace Features
 
-- [ ] `workspace/symbol` (capability field only)
+- [x] `workspace/symbol`
 - [ ] `workspace/executeCommand`
-- [ ] `workspace/applyEdit`
+- [x] `workspace/applyEdit`
 - [ ] `workspace/didChangeConfiguration`
 - [ ] `workspace/didChangeWatchedFiles`
 - [ ] `workspace/didChangeWorkspaceFolders`

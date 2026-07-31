@@ -365,6 +365,279 @@ test_code_action_union_round_trip (void)
       "vala.refresh");
 }
 
+static void
+test_document_symbol_result_round_trip (void)
+{
+  LspRange range = { 0 };
+  LspRange selection = { 0 };
+  LspDocumentSymbol *document_symbols[1];
+  LspSymbolInformation *symbol_information[1];
+  gint result_length;
+  g_auto (LspLocation) location = { 0 };
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GUri) uri = parse_uri (
+      "file:///workspace/main.vala");
+  g_autoptr (GVariant) wire = NULL;
+  g_autoptr (LspDocumentSymbol) document_symbol = NULL;
+  g_autoptr (LspSymbolInformation) flat_symbol = NULL;
+  g_autoptr (LspDocumentSymbolResult) original = NULL;
+  g_autoptr (LspDocumentSymbolResult) decoded = NULL;
+  LspDocumentSymbol **decoded_document_symbols;
+  LspSymbolInformation **decoded_symbol_information;
+
+  make_range (&range, 0, 0, 4, 1);
+  make_range (&selection, 0, 6, 0, 13);
+  document_symbol = lsp_document_symbol_new (
+      "Example",
+      LSP_SYMBOL_KIND_CLASS,
+      &range,
+      &selection,
+      NULL,
+      LSP_SYMBOL_TAG_UNSET);
+  document_symbols[0] = document_symbol;
+  original = lsp_document_symbol_result_new_for_document_symbols (
+      document_symbols,
+      G_N_ELEMENTS (document_symbols));
+  wire = lsp_document_symbol_result_to_variant (original);
+  decoded = lsp_document_symbol_result_new_from_variant (wire, &error);
+
+  g_assert_no_error (error);
+  decoded_document_symbols = lsp_document_symbol_result_get_document_symbols (
+      decoded,
+      &result_length);
+  g_assert_cmpint (result_length, ==, 1);
+  g_assert_cmpstr (
+      lsp_document_symbol_get_name (decoded_document_symbols[0]),
+      ==,
+      "Example");
+  g_assert_null (
+      lsp_document_symbol_result_get_symbol_information (
+          decoded,
+          NULL));
+
+  g_clear_pointer (&wire, g_variant_unref);
+  g_clear_pointer (&original, lsp_document_symbol_result_unref);
+  g_clear_pointer (&decoded, lsp_document_symbol_result_unref);
+  lsp_location_init (&location, uri, &range);
+  flat_symbol = lsp_symbol_information_new (
+      "Example",
+      LSP_SYMBOL_KIND_CLASS,
+      &location,
+      NULL,
+      LSP_SYMBOL_TAG_UNSET);
+  symbol_information[0] = flat_symbol;
+  original = lsp_document_symbol_result_new_for_symbol_information (
+      symbol_information,
+      G_N_ELEMENTS (symbol_information));
+  wire = lsp_document_symbol_result_to_variant (original);
+  decoded = lsp_document_symbol_result_new_from_variant (wire, &error);
+
+  g_assert_no_error (error);
+  g_assert_null (
+      lsp_document_symbol_result_get_document_symbols (
+          decoded,
+          NULL));
+  decoded_symbol_information = lsp_document_symbol_result_get_symbol_information (
+      decoded,
+      &result_length);
+  g_assert_cmpint (result_length, ==, 1);
+  g_assert_cmpstr (
+      lsp_symbol_information_get_name (decoded_symbol_information[0]),
+      ==,
+      "Example");
+}
+
+static void
+test_prepare_rename_result_round_trip (void)
+{
+  LspRange range = { 0 };
+  g_auto (LspPrepareRenameResult) original = { 0 };
+  g_auto (LspPrepareRenameResult) decoded = { 0 };
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GVariant) wire = NULL;
+
+  make_range (&range, 3, 4, 3, 11);
+  lsp_prepare_rename_result_init_for_range (
+      &original,
+      &range,
+      "old_name");
+  wire = lsp_prepare_rename_result_to_variant (&original);
+  lsp_prepare_rename_result_init_from_variant (
+      &decoded,
+      wire,
+      &error);
+
+  g_assert_no_error (error);
+  g_assert_true (decoded.has_range);
+  g_assert_cmpstr (decoded.placeholder, ==, "old_name");
+  g_assert_cmpuint (decoded.range.start.character, ==, 4);
+
+  g_clear_pointer (&wire, g_variant_unref);
+  lsp_prepare_rename_result_destroy (&original);
+  original = (LspPrepareRenameResult) { 0 };
+  lsp_prepare_rename_result_destroy (&decoded);
+  decoded = (LspPrepareRenameResult) { 0 };
+  lsp_prepare_rename_result_init_for_default_behavior (
+      &original,
+      TRUE);
+  wire = lsp_prepare_rename_result_to_variant (&original);
+  lsp_prepare_rename_result_init_from_variant (
+      &decoded,
+      wire,
+      &error);
+
+  g_assert_no_error (error);
+  g_assert_false (decoded.has_range);
+  g_assert_true (decoded.default_behavior);
+}
+
+static void
+test_type_hierarchy_and_capabilities_round_trip (void)
+{
+  LspRange range = { 0 };
+  LspRange selection = { 0 };
+  LspSymbolKind symbol_kinds[] = {
+    LSP_SYMBOL_KIND_CLASS,
+    LSP_SYMBOL_KIND_METHOD,
+  };
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GUri) uri = parse_uri (
+      "file:///workspace/main.vala");
+  g_autoptr (GVariant) wire = NULL;
+  g_autoptr (LspTypeHierarchyItem) item = NULL;
+  g_autoptr (LspTypeHierarchyItem) decoded_item = NULL;
+  g_autoptr (LspDocumentSymbolClientCaps) symbol_caps = NULL;
+  g_autoptr (LspRenameClientCaps) rename_caps = NULL;
+  g_autoptr (LspTypeHierarchyClientCaps) hierarchy_caps = NULL;
+  g_autoptr (LspTextDocumentClientCaps) text_caps = NULL;
+  g_autoptr (LspClientCaps) client_caps = NULL;
+  g_autoptr (LspClientCaps) decoded_client = NULL;
+  g_autoptr (LspTypeHierarchyOptions) hierarchy_options = NULL;
+  g_autoptr (LspServerCaps) server_caps = NULL;
+  g_autoptr (LspServerCaps) decoded_server = NULL;
+
+  make_range (&range, 0, 0, 5, 1);
+  make_range (&selection, 0, 6, 0, 13);
+  item = lsp_type_hierarchy_item_new (
+      "Example",
+      LSP_SYMBOL_KIND_CLASS,
+      uri,
+      &range,
+      &selection,
+      "class Example",
+      LSP_SYMBOL_TAG_DEPRECATED);
+  lsp_type_hierarchy_item_set_data (
+      item,
+      g_variant_new_string ("hierarchy-token"));
+  wire = lsp_type_hierarchy_item_to_variant (item);
+  decoded_item = lsp_type_hierarchy_item_new_from_variant (
+      wire,
+      &error);
+
+  g_assert_no_error (error);
+  g_assert_cmpstr (
+      lsp_type_hierarchy_item_get_name (decoded_item),
+      ==,
+      "Example");
+  g_assert_cmpint (
+      lsp_type_hierarchy_item_get_kind (decoded_item),
+      ==,
+      LSP_SYMBOL_KIND_CLASS);
+  g_assert_true (
+      LSP_SYMBOL_TAG_DEPRECATED &
+      lsp_type_hierarchy_item_get_tags (decoded_item));
+  g_assert_cmpstr (
+      g_variant_get_string (
+          lsp_type_hierarchy_item_get_data (decoded_item),
+          NULL),
+      ==,
+      "hierarchy-token");
+
+  symbol_caps = lsp_document_symbol_client_caps_new ();
+  lsp_document_symbol_client_caps_set_symbol_kinds (
+      symbol_caps,
+      symbol_kinds,
+      G_N_ELEMENTS (symbol_kinds));
+  lsp_document_symbol_client_caps_set_hierarchical_document_symbol_support (
+      symbol_caps,
+      TRUE);
+  lsp_document_symbol_client_caps_set_supported_tags (
+      symbol_caps,
+      LSP_SYMBOL_TAG_DEPRECATED);
+  rename_caps = lsp_rename_client_caps_new ();
+  lsp_rename_client_caps_set_prepare_support (rename_caps, TRUE);
+  lsp_rename_client_caps_set_prepare_support_default_behavior (
+      rename_caps,
+      LSP_PREPARE_SUPPORT_DEFAULT_BEHAVIOR_IDENTIFIER);
+  hierarchy_caps = lsp_type_hierarchy_client_caps_new ();
+  lsp_type_hierarchy_client_caps_set_dynamic_registration (
+      hierarchy_caps,
+      TRUE);
+  text_caps = lsp_text_document_client_caps_new ();
+  lsp_text_document_client_caps_set_synchronization (
+      text_caps,
+      LSP_TEXT_DOCUMENT_SYNC_CLIENT_CAPS_WILL_SAVE |
+      LSP_TEXT_DOCUMENT_SYNC_CLIENT_CAPS_DID_SAVE);
+  lsp_text_document_client_caps_set_document_symbol (
+      text_caps,
+      symbol_caps);
+  lsp_text_document_client_caps_set_rename (text_caps, rename_caps);
+  lsp_text_document_client_caps_set_type_hierarchy (
+      text_caps,
+      hierarchy_caps);
+  client_caps = lsp_client_caps_new ();
+  lsp_client_caps_set_text_document (client_caps, text_caps);
+  g_clear_pointer (&wire, g_variant_unref);
+  wire = lsp_client_caps_to_variant (client_caps);
+  decoded_client = lsp_client_caps_new_from_variant (wire, &error);
+
+  g_assert_no_error (error);
+  g_assert_true (
+      LSP_TEXT_DOCUMENT_SYNC_CLIENT_CAPS_WILL_SAVE &
+      lsp_text_document_client_caps_get_synchronization (
+          lsp_client_caps_get_text_document (decoded_client)));
+  g_assert_true (
+      lsp_document_symbol_client_caps_get_hierarchical_document_symbol_support (
+          lsp_text_document_client_caps_get_document_symbol (
+              lsp_client_caps_get_text_document (decoded_client))));
+  g_assert_true (
+      lsp_rename_client_caps_get_prepare_support (
+          lsp_text_document_client_caps_get_rename (
+              lsp_client_caps_get_text_document (decoded_client))));
+  g_assert_true (
+      lsp_type_hierarchy_client_caps_get_dynamic_registration (
+          lsp_text_document_client_caps_get_type_hierarchy (
+              lsp_client_caps_get_text_document (decoded_client))));
+
+  hierarchy_options = lsp_type_hierarchy_options_new ();
+  server_caps = lsp_server_caps_new ();
+  lsp_server_caps_set_type_hierarchy (
+      server_caps,
+      hierarchy_options);
+  g_clear_pointer (&wire, g_variant_unref);
+  wire = lsp_server_caps_to_variant (server_caps);
+  decoded_server = lsp_server_caps_new_from_variant (wire, &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (
+      lsp_server_caps_get_type_hierarchy (decoded_server));
+}
+
+static void
+test_protocol_error_values (void)
+{
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_PARSE_ERROR, ==, -32700);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_INVALID_REQUEST, ==, -32600);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_METHOD_NOT_FOUND, ==, -32601);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_INVALID_PARAMS, ==, -32602);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_INTERNAL_ERROR, ==, -32603);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_SERVER_NOT_INITIALIZED, ==, -32002);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_UNKNOWN_ERROR_CODE, ==, -32001);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_REQUEST_FAILED, ==, -32803);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_SERVER_CANCELLED, ==, -32802);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_CONTENT_MODIFIED, ==, -32801);
+  g_assert_cmpint (LSP_PROTOCOL_ERROR_REQUEST_CANCELLED, ==, -32800);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -381,5 +654,17 @@ main (int argc, char *argv[])
   g_test_add_func (
       "/c/serialization/advanced/code-action-union",
       test_code_action_union_round_trip);
+  g_test_add_func (
+      "/c/serialization/advanced/document-symbol-result",
+      test_document_symbol_result_round_trip);
+  g_test_add_func (
+      "/c/serialization/advanced/prepare-rename-result",
+      test_prepare_rename_result_round_trip);
+  g_test_add_func (
+      "/c/serialization/advanced/type-hierarchy-and-capabilities",
+      test_type_hierarchy_and_capabilities_round_trip);
+  g_test_add_func (
+      "/c/protocol/error-values",
+      test_protocol_error_values);
   return g_test_run ();
 }

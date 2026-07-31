@@ -1,10 +1,10 @@
 /**
- * Error codes used in JSON-RPC and LSP error responses.
+ * Errors that can be returned in JSON-RPC and LSP error responses.
  *
  * Reserved error-range boundaries are intentionally excluded because they do
  * not represent errors that can be returned in a response.
  */
-public enum Lsp.ErrorCode {
+public errordomain Lsp.ProtocolError {
     PARSE_ERROR            = -32700,
     INVALID_REQUEST        = -32600,
     METHOD_NOT_FOUND       = -32601,
@@ -16,21 +16,4 @@ public enum Lsp.ErrorCode {
     SERVER_CANCELLED       = -32802,
     CONTENT_MODIFIED       = -32801,
     REQUEST_CANCELLED      = -32800
-}
-
-public errordomain Lsp.ProtocolError {
-    /**
-     * Not connected to a remote.
-     */
-    NO_CONNECTION,
-
-    /**
-     * Client not initialized.
-     */
-    CLIENT_NOT_INITIALIZED,
-
-    /**
-     * The requested method is not implemented
-     */
-    METHOD_NOT_IMPLEMENTED
 }

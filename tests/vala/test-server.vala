@@ -118,6 +118,84 @@ private class TestServer : Lsp.Server {
         record ("did-close-finish");
     }
 
+    protected override async DocumentSymbolResult? document_symbol_async (
+        Lsp.Client client,
+        TextDocumentIdentifier text_document
+    ) throws Error {
+        var range = Range (Position (0, 0), Position (4, 1));
+        var selection = Range (Position (0, 6), Position (0, 13));
+        DocumentSymbol[] symbols = {
+            new DocumentSymbol (
+                "Example",
+                SymbolKind.CLASS,
+                range,
+                selection)
+        };
+        return new DocumentSymbolResult.for_document_symbols (symbols);
+    }
+
+    protected override async PrepareRenameResult? prepare_rename_async (
+        Lsp.Client client,
+        TextDocumentIdentifier text_document,
+        Position position
+    ) throws Error {
+        return PrepareRenameResult.for_range (
+            Range (Position (position.line, 2), Position (position.line, 9)),
+            "example");
+    }
+
+    private TypeHierarchyItem hierarchy_item (
+        string name,
+        TextDocumentIdentifier text_document
+    ) {
+        var range = Range (Position (0, 0), Position (4, 1));
+        return new TypeHierarchyItem (
+            name,
+            SymbolKind.CLASS,
+            text_document.uri,
+            range,
+            Range (Position (0, 6), Position (0, 13)));
+    }
+
+    protected override async TypeHierarchyItem[]?
+    prepare_type_hierarchy_async (
+        Lsp.Client client,
+        TextDocumentIdentifier text_document,
+        Position position
+    ) throws Error {
+        return { hierarchy_item ("Example", text_document) };
+    }
+
+    protected override async TypeHierarchyItem[]?
+    type_hierarchy_supertypes_async (
+        Lsp.Client client,
+        TypeHierarchyItem item
+    ) throws Error {
+        return {
+                   new TypeHierarchyItem (
+                       "Base",
+                       SymbolKind.CLASS,
+                       item.uri,
+                       item.range,
+                       item.selection_range)
+        };
+    }
+
+    protected override async TypeHierarchyItem[]?
+    type_hierarchy_subtypes_async (
+        Lsp.Client client,
+        TypeHierarchyItem item
+    ) throws Error {
+        return {
+                   new TypeHierarchyItem (
+                       "Derived",
+                       SymbolKind.CLASS,
+                       item.uri,
+                       item.range,
+                       item.selection_range)
+        };
+    }
+
     protected override async void shutdown_async (
         Lsp.Client client
     ) throws Error {

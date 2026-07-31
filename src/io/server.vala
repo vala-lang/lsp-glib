@@ -146,16 +146,6 @@ public abstract class Lsp.Server : Jsonrpc.Server {
         }
     }
 
-    /**
-     * Allows an implementation to synchronize its context before dispatching
-     * a request. The default implementation returns immediately.
-     *
-     * @param cancellable cancelled when the remote client cancels the request
-     */
-    protected virtual async void wait_for_context_update_async (
-        Cancellable cancellable) throws Error {
-    }
-
     private async void handle_call_async (Jsonrpc.Client client, string method, Variant id,
         Variant parameters) {
         if (exited)
@@ -166,32 +156,29 @@ public abstract class Lsp.Server : Jsonrpc.Server {
         try {
             if (is_shutting_down && method != "exit") {
                 debug ("rejected because we're already shutting down");
-                yield reply_error_async (client, id, ErrorCode.INVALID_REQUEST,
+                yield reply_error_async (client, id, ProtocolError.INVALID_REQUEST,
                     "server is shutting down");
                 return;
             }
 
-            // Give implementations a chance to synchronize their context.
-            yield wait_for_context_update_async (request_cancellable);
-            request_cancellable.set_error_if_cancelled ();
-
             var lsp_client = new Client (client, request_cancellable);
             switch (method) {
                 default: {
-                    yield reply_error_async (client, id, ErrorCode.METHOD_NOT_FOUND);
+                    yield reply_error_async (client, id, ProtocolError.METHOD_NOT_FOUND);
                     break;
                 }
 
                 case "initialize":
                     var init_params = new InitializeParams.from_variant (parameters);
                     var init_result = yield initialize_async (lsp_client, init_params);
-                    yield client.reply_async (id, init_result.to_variant (), cancellable);
+                    yield reply_result_async (client, id, init_result.to_variant (),
+                        request_cancellable);
                     break;
 
                 case "shutdown":
                     is_shutting_down = true;
                     yield shutdown_async (lsp_client);
-                    yield reply_null_async (client, id, cancellable);
+                    yield reply_result_async (client, id, null, request_cancellable);
                     break;
 
                 case "textDocument/completion":
@@ -208,12 +195,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant), context);
                     if (items == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] item_variants = {};
                         foreach (unowned var item in items)
                             item_variants += item.to_variant ();
-                        yield client.reply_async (id, item_variants, cancellable);
+                        yield reply_result_async (client, id, item_variants, request_cancellable);
                     }
                     break;
 
@@ -226,12 +213,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
                     if (highlights == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] hl_variants = {};
                         foreach (unowned var hl in highlights)
                             hl_variants += hl.to_variant ();
-                        yield client.reply_async (id, hl_variants, cancellable);
+                        yield reply_result_async (client, id, hl_variants, request_cancellable);
                     }
                     break;
 
@@ -244,9 +231,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
                     if (hover_result == null)
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     else
-                        yield client.reply_async (id, hover_result.to_variant (), cancellable);
+                        yield reply_result_async (client, id, hover_result.to_variant (),
+                            request_cancellable);
                     break;
 
                 case "textDocument/signatureHelp":
@@ -258,9 +246,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
                     if (sig_result == null)
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     else
-                        yield client.reply_async (id, sig_result.to_variant (), cancellable);
+                        yield reply_result_async (client, id, sig_result.to_variant (),
+                            request_cancellable);
                     break;
 
                 case "textDocument/formatting":
@@ -269,12 +258,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         params.text_document,
                         params.options);
                     if (fmt_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] edit_variants = {};
                         foreach (var edit in fmt_result)
                             edit_variants += edit.to_variant ();
-                        yield client.reply_async (id, edit_variants, cancellable);
+                        yield reply_result_async (client, id, edit_variants, request_cancellable);
                     }
                     break;
 
@@ -285,12 +274,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         rng_params.range,
                         rng_params.options);
                     if (rng_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] edit_variants = {};
                         foreach (var edit in rng_result)
                             edit_variants += edit.to_variant ();
-                        yield client.reply_async (id, edit_variants, cancellable);
+                        yield reply_result_async (client, id, edit_variants, request_cancellable);
                     }
                     break;
 
@@ -303,12 +292,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
                     if (decl_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] loc_variants = {};
                         foreach (unowned var loc in decl_result)
                             loc_variants += loc.to_variant ();
-                        yield client.reply_async (id, loc_variants, cancellable);
+                        yield reply_result_async (client, id, loc_variants, request_cancellable);
                     }
                     break;
 
@@ -321,12 +310,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
                     if (def_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] loc_variants = {};
                         foreach (unowned var loc in def_result)
                             loc_variants += loc.to_variant ();
-                        yield client.reply_async (id, loc_variants, cancellable);
+                        yield reply_result_async (client, id, loc_variants, request_cancellable);
                     }
                     break;
 
@@ -339,12 +328,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
                     if (impl_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] loc_variants = {};
                         foreach (unowned var loc in impl_result)
                             loc_variants += loc.to_variant ();
-                        yield client.reply_async (id, loc_variants, cancellable);
+                        yield reply_result_async (client, id, loc_variants, request_cancellable);
                     }
                     break;
 
@@ -360,27 +349,25 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         Position.from_variant (pos_variant),
                         new ReferenceContext.from_variant (ctx_variant));
                     if (refs == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] ref_variants = {};
                         foreach (unowned var loc in refs)
                             ref_variants += loc.to_variant ();
-                        yield client.reply_async (id, ref_variants, cancellable);
+                        yield reply_result_async (client, id, ref_variants, request_cancellable);
                     }
                     break;
 
                 case "textDocument/documentSymbol":
                     var tdi_variant = expect_property (parameters, "textDocument",
                         VariantType.VARDICT, "DocumentSymbolParams");
-                    DocumentSymbol[]? sym_result = yield document_symbol_async (lsp_client,
+                    DocumentSymbolResult? sym_result = yield document_symbol_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant));
                     if (sym_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
-                        Variant[] sym_variants = {};
-                        foreach (unowned var sym in sym_result)
-                            sym_variants += sym.to_variant ();
-                        yield client.reply_async (id, sym_variants, cancellable);
+                        yield reply_result_async (
+                            client, id, sym_result.to_variant (), request_cancellable);
                     }
                     break;
 
@@ -391,9 +378,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         rename_params.position,
                         rename_params.new_name);
                     if (rename_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
-                        yield client.reply_async (id, rename_result.to_variant (), cancellable);
+                        yield reply_result_async (client, id, rename_result.to_variant (),
+                            request_cancellable);
                     }
                     break;
 
@@ -402,13 +390,14 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         VariantType.VARDICT, "PrepareRenameParams");
                     var pos_variant = expect_property (parameters, "position", VariantType.VARDICT,
                         "PrepareRenameParams");
-                    Variant? prepare_result = yield prepare_rename_async (lsp_client,
+                    PrepareRenameResult? prepare_result = yield prepare_rename_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
                     if (prepare_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
-                        yield client.reply_async (id, prepare_result, cancellable);
+                        yield reply_result_async (
+                            client, id, prepare_result.to_variant (), request_cancellable);
                     }
                     break;
 
@@ -418,12 +407,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         ih_params.text_document,
                         ih_params.range);
                     if (ih_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] ih_variants = {};
                         foreach (unowned var hint in ih_result)
                             ih_variants += hint.to_variant ();
-                        yield client.reply_async (id, ih_variants, cancellable);
+                        yield reply_result_async (client, id, ih_variants, request_cancellable);
                     }
                     break;
 
@@ -431,9 +420,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     var hint = new InlayHint.from_variant (parameters);
                     InlayHint? resolved = yield inlay_hint_resolve_async (lsp_client, hint);
                     if (resolved == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
-                        yield client.reply_async (id, resolved.to_variant (), cancellable);
+                        yield reply_result_async (client, id, resolved.to_variant (),
+                            request_cancellable);
                     }
                     break;
 
@@ -446,40 +436,85 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         TextDocumentIdentifier.from_variant (tdi_variant),
                         Position.from_variant (pos_variant));
                     if (ch_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] ch_variants = {};
                         foreach (unowned var item in ch_result)
                             ch_variants += item.to_variant ();
-                        yield client.reply_async (id, ch_variants, cancellable);
+                        yield reply_result_async (client, id, ch_variants, request_cancellable);
                     }
                     break;
 
                 case "callHierarchy/incomingCalls":
-                    var item = new CallHierarchyItem.from_variant (parameters);
+                    var item = new CallHierarchyItem.from_variant (
+                        expect_property (parameters, "item", VariantType.VARDICT,
+                            "CallHierarchyIncomingCallsParams"));
                     CallHierarchyIncomingCall[]? in_result = yield incoming_calls_async (lsp_client,
                         item);
                     if (in_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] in_variants = {};
                         foreach (unowned var call in in_result)
                             in_variants += call.to_variant ();
-                        yield client.reply_async (id, in_variants, cancellable);
+                        yield reply_result_async (client, id, in_variants, request_cancellable);
                     }
                     break;
 
                 case "callHierarchy/outgoingCalls":
-                    var out_item = new CallHierarchyItem.from_variant (parameters);
+                    var out_item = new CallHierarchyItem.from_variant (
+                        expect_property (parameters, "item", VariantType.VARDICT,
+                            "CallHierarchyOutgoingCallsParams"));
                     CallHierarchyOutgoingCall[]? out_result =
                         yield outgoing_calls_async (lsp_client, out_item);
                     if (out_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] out_variants = {};
                         foreach (unowned var call in out_result)
                             out_variants += call.to_variant ();
-                        yield client.reply_async (id, out_variants, cancellable);
+                        yield reply_result_async (client, id, out_variants, request_cancellable);
+                    }
+                    break;
+
+                case "textDocument/prepareTypeHierarchy":
+                    var th_tdi_variant = expect_property (parameters, "textDocument",
+                        VariantType.VARDICT, "TypeHierarchyPrepareParams");
+                    var th_pos_variant = expect_property (parameters, "position",
+                        VariantType.VARDICT, "TypeHierarchyPrepareParams");
+                    TypeHierarchyItem[]? th_result = yield prepare_type_hierarchy_async (
+                        lsp_client,
+                        TextDocumentIdentifier.from_variant (th_tdi_variant),
+                        Position.from_variant (th_pos_variant));
+                    if (th_result == null) {
+                        yield reply_result_async (client, id, null, request_cancellable);
+                    } else {
+                        Variant[] th_variants = {};
+                        foreach (unowned var hierarchy_item in th_result)
+                            th_variants += hierarchy_item.to_variant ();
+                        yield reply_result_async (
+                            client, id, th_variants, request_cancellable);
+                    }
+                    break;
+
+                case "typeHierarchy/supertypes":
+                case "typeHierarchy/subtypes":
+                    var th_item_variant = expect_property (parameters, "item",
+                        VariantType.VARDICT, "TypeHierarchyParams");
+                    var th_item = new TypeHierarchyItem.from_variant (th_item_variant);
+                    TypeHierarchyItem[]? th_items;
+                    if (method == "typeHierarchy/supertypes")
+                        th_items = yield type_hierarchy_supertypes_async (lsp_client, th_item);
+                    else
+                        th_items = yield type_hierarchy_subtypes_async (lsp_client, th_item);
+                    if (th_items == null) {
+                        yield reply_result_async (client, id, null, request_cancellable);
+                    } else {
+                        Variant[] th_variants = {};
+                        foreach (unowned var hierarchy_item in th_items)
+                            th_variants += hierarchy_item.to_variant ();
+                        yield reply_result_async (
+                            client, id, th_variants, request_cancellable);
                     }
                     break;
 
@@ -489,12 +524,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     CodeLens[]? lenses = yield code_lens_async (lsp_client,
                         TextDocumentIdentifier.from_variant (tdi_variant));
                     if (lenses == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] lens_variants = {};
                         foreach (unowned var lens in lenses)
                             lens_variants += lens.to_variant ();
-                        yield client.reply_async (id, lens_variants, cancellable);
+                        yield reply_result_async (client, id, lens_variants, request_cancellable);
                     }
                     break;
 
@@ -504,12 +539,12 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                     SymbolInformation[]? sym_result = yield workspace_symbol_async (lsp_client,
                         query);
                     if (sym_result == null) {
-                        yield reply_null_async (client, id, cancellable);
+                        yield reply_result_async (client, id, null, request_cancellable);
                     } else {
                         Variant[] sym_variants = {};
                         foreach (unowned var sym in sym_result)
                             sym_variants += sym.to_variant ();
-                        yield client.reply_async (id, sym_variants, cancellable);
+                        yield reply_result_async (client, id, sym_variants, request_cancellable);
                     }
                     break;
 
@@ -527,36 +562,43 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                         range,
                         context);
                     if (action_result == null) {
-                        yield reply_null_async (
-                            client,
-                            id,
-                            cancellable);
+                        yield reply_result_async (
+                            client, id, null, request_cancellable);
                     } else {
                         Variant[] actions = {};
                         foreach (var action in action_result)
                             actions += action.to_variant ();
-                        yield client.reply_async (id, actions, cancellable);
+                        yield reply_result_async (client, id, actions, request_cancellable);
                     }
                     break;
             }
         } catch (IOError.CANCELLED e) {
             if (request_cancellable.is_cancelled ())
-                yield reply_error_async (client, id, ErrorCode.REQUEST_CANCELLED, e.message);
+                yield reply_error_async (client, id, ProtocolError.REQUEST_CANCELLED, e.message);
             else
-                yield reply_error_async (client, id, ErrorCode.INTERNAL_ERROR, e.message);
+                yield reply_error_async (client, id, ProtocolError.SERVER_CANCELLED, e.message);
         } catch (DeserializeError e) {
             warning ("request failed - deserialize params failed - %s", e.message);
-            yield reply_error_async (client, id, ErrorCode.INVALID_PARAMS, e.message);
-        } catch (ProtocolError.METHOD_NOT_IMPLEMENTED e) {
-            yield reply_error_async (client, id, ErrorCode.METHOD_NOT_FOUND, e.message);
+            yield reply_error_async (client, id, ProtocolError.INVALID_PARAMS, e.message);
+        } catch (ProtocolError e) {
+            yield reply_error_async (client, id, e.code, e.message);
         } catch (Error e) {
-            yield reply_error_async (client, id, ErrorCode.INTERNAL_ERROR, e.message);
+            yield reply_error_async (client, id, ProtocolError.INTERNAL_ERROR, e.message);
         } finally {
             unregister_request (client, id);
         }
     }
 
-    private async void reply_error_async (Jsonrpc.Client client, Variant id, ErrorCode error_code,
+    private async void reply_result_async (Jsonrpc.Client client, Variant id, Variant? result,
+        Cancellable request_cancellable) throws Error {
+        request_cancellable.set_error_if_cancelled ();
+        if (result == null)
+            yield Lsp.reply_null_async (client, id, cancellable);
+        else
+            yield client.reply_async (id, result, cancellable);
+    }
+
+    private async void reply_error_async (Jsonrpc.Client client, Variant id, int error_code,
         string? message = null) {
         try {
             yield client.reply_error_async (id, error_code, message, cancellable);
@@ -801,7 +843,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async Action[]? code_action_async (Client client,
         TextDocumentIdentifier text_document, Range range, CodeActionContext context) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/codeAction is not implemented");
     }
 
@@ -825,7 +867,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
     protected virtual async CompletionItem[]? completion_async (Client client,
         TextDocumentIdentifier text_document, Position position,
         CompletionContext? context) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/completion is not implemented");
     }
 
@@ -840,7 +882,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async Hover? hover_async (Client client, TextDocumentIdentifier text_document,
         Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/hover is not implemented");
+        throw new ProtocolError.METHOD_NOT_FOUND ("textDocument/hover is not implemented");
     }
 
     /**
@@ -854,7 +896,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async SignatureHelp? signature_help_async (Client client,
         TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/signatureHelp is not implemented");
     }
 
@@ -870,7 +912,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async Location[]? declaration_async (Client client,
         TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/declaration is not implemented");
     }
 
@@ -886,7 +928,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async Location[]? definition_async (Client client,
         TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/definition is not implemented");
     }
 
@@ -905,7 +947,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async DocumentHighlight[]? document_highlight_async (Client client,
         TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/documentHighlight is not implemented");
     }
 
@@ -917,9 +959,9 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      *
      * @return a list of document symbols, or null if there are none
      */
-    protected virtual async DocumentSymbol[]? document_symbol_async (Client client,
+    protected virtual async DocumentSymbolResult? document_symbol_async (Client client,
         TextDocumentIdentifier text_document) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/documentSymbol is not implemented");
     }
 
@@ -934,7 +976,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async SymbolInformation[]? workspace_symbol_async (Client client,
         string query) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("workspace/symbol is not implemented");
+        throw new ProtocolError.METHOD_NOT_FOUND ("workspace/symbol is not implemented");
     }
 
     /**
@@ -951,7 +993,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
     protected virtual async Location[]? references_async (Client client,
         TextDocumentIdentifier text_document, Position position,
         ReferenceContext context) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/references is not implemented");
     }
 
@@ -968,7 +1010,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async Location[]? implementation_async (Client client,
         TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/implementation is not implemented");
     }
 
@@ -984,7 +1026,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async WorkspaceEdit? rename_async (Client client,
         TextDocumentIdentifier text_document, Position position, string new_name) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/rename is not implemented");
+        throw new ProtocolError.METHOD_NOT_FOUND ("textDocument/rename is not implemented");
     }
 
     /**
@@ -994,11 +1036,11 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * @param text_document the document containing the symbol
      * @param position      the position of the symbol
      *
-     * @return a Variant describing the prepared rename range, or null
+     * @return the prepared rename range or default behavior, or null
      */
-    protected virtual async Variant? prepare_rename_async (Client client,
+    protected virtual async PrepareRenameResult? prepare_rename_async (Client client,
         TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/prepareRename is not implemented");
     }
 
@@ -1012,7 +1054,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async CodeLens[]? code_lens_async (Client client,
         TextDocumentIdentifier text_document) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("textDocument/codeLens is not implemented");
+        throw new ProtocolError.METHOD_NOT_FOUND ("textDocument/codeLens is not implemented");
     }
 
     /**
@@ -1026,7 +1068,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async TextEdit[]? formatting_async (Client client,
         TextDocumentIdentifier text_document, FormattingOptions options) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/formatting is not implemented");
     }
 
@@ -1042,7 +1084,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async TextEdit[]? range_formatting_async (Client client,
         TextDocumentIdentifier text_document, Range range, FormattingOptions options) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/rangeFormatting is not implemented");
     }
 
@@ -1058,7 +1100,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async CallHierarchyItem[]? prepare_call_hierarchy_async (Client client,
         TextDocumentIdentifier text_document, Position position) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/prepareCallHierarchy is not implemented");
     }
 
@@ -1072,7 +1114,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async CallHierarchyIncomingCall[]? incoming_calls_async (Client client,
         CallHierarchyItem item) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "callHierarchy/incomingCalls is not implemented");
     }
 
@@ -1086,8 +1128,41 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async CallHierarchyOutgoingCall[]? outgoing_calls_async (Client client,
         CallHierarchyItem item) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "callHierarchy/outgoingCalls is not implemented");
+    }
+
+    /**
+     * Prepares a type hierarchy for a symbol at a document position.
+     *
+     * @since 3.17.0
+     */
+    protected virtual async TypeHierarchyItem[]? prepare_type_hierarchy_async (Client client,
+        TextDocumentIdentifier text_document, Position position) throws Error {
+        throw new ProtocolError.METHOD_NOT_FOUND (
+            "textDocument/prepareTypeHierarchy is not implemented");
+    }
+
+    /**
+     * Resolves the direct supertypes of a type hierarchy item.
+     *
+     * @since 3.17.0
+     */
+    protected virtual async TypeHierarchyItem[]? type_hierarchy_supertypes_async (Client client,
+        TypeHierarchyItem item) throws Error {
+        throw new ProtocolError.METHOD_NOT_FOUND (
+            "typeHierarchy/supertypes is not implemented");
+    }
+
+    /**
+     * Resolves the direct subtypes of a type hierarchy item.
+     *
+     * @since 3.17.0
+     */
+    protected virtual async TypeHierarchyItem[]? type_hierarchy_subtypes_async (Client client,
+        TypeHierarchyItem item) throws Error {
+        throw new ProtocolError.METHOD_NOT_FOUND (
+            "typeHierarchy/subtypes is not implemented");
     }
 
     /**
@@ -1101,7 +1176,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async InlayHint[]? inlay_hint_async (Client client,
         TextDocumentIdentifier text_document, Range range) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "textDocument/inlayHint is not implemented");
     }
 
@@ -1115,7 +1190,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected virtual async InlayHint? inlay_hint_resolve_async (Client client,
         InlayHint hint) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("inlayHint/resolve is not implemented");
+        throw new ProtocolError.METHOD_NOT_FOUND ("inlayHint/resolve is not implemented");
     }
 
     /**
@@ -1129,7 +1204,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      * should also wait with sending the exit notification until they have
      * received a response from the shutdown request.
      *
-     * The server will error with {@link Lsp.ErrorCode.INVALID_REQUEST} if
+     * The server will error with {@link Lsp.ProtocolError.INVALID_REQUEST} if
      * it receives any requests after a shutdown request.
      */
     protected abstract async void shutdown_async (Client client) throws Error;

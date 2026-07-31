@@ -208,6 +208,152 @@ class TypedSerializationTest(unittest.TestCase):
         self.assertEqual(decoded_symbol.get_range().end.line, 6)
         self.assertEqual(decoded_symbol.get_tags(), Lsp.SymbolTag.DEPRECATED)
 
+    def test_vls_protocol_results(self) -> None:
+        uri = GLib.Uri.parse(
+            "file:///workspace/main.vala",
+            GLib.UriFlags.NONE,
+        )
+        range_ = make_range(0, 0, 5, 1)
+        selection = make_range(0, 6, 0, 13)
+        document_symbol = Lsp.DocumentSymbol.new(
+            "Example",
+            Lsp.SymbolKind.CLASS,
+            range_,
+            selection,
+            None,
+            Lsp.SymbolTag.UNSET,
+        )
+        hierarchical = Lsp.DocumentSymbolResult.for_document_symbols(
+            [document_symbol]
+        )
+        decoded_hierarchical = Lsp.DocumentSymbolResult.from_variant(
+            hierarchical.to_variant()
+        )
+        self.assertEqual(
+            decoded_hierarchical.get_document_symbols()[0].get_name(),
+            "Example",
+        )
+        self.assertEqual(
+            len(decoded_hierarchical.get_symbol_information()),
+            0,
+        )
+
+        location = Lsp.Location()
+        location.init(uri, range_)
+        flat_symbol = Lsp.SymbolInformation.new(
+            "Example",
+            Lsp.SymbolKind.CLASS,
+            location,
+            None,
+            Lsp.SymbolTag.UNSET,
+        )
+        flat = Lsp.DocumentSymbolResult.for_symbol_information([flat_symbol])
+        decoded_flat = Lsp.DocumentSymbolResult.from_variant(flat.to_variant())
+        self.assertEqual(len(decoded_flat.get_document_symbols()), 0)
+        self.assertEqual(
+            decoded_flat.get_symbol_information()[0].get_name(),
+            "Example",
+        )
+
+        prepared = Lsp.PrepareRenameResult()
+        prepared.init_for_range(range_, "old_name")
+        decoded_prepared = Lsp.PrepareRenameResult()
+        decoded_prepared.init_from_variant(prepared.to_variant())
+        self.assertTrue(decoded_prepared.has_range)
+        self.assertEqual(decoded_prepared.placeholder, "old_name")
+        self.assertEqual(decoded_prepared.range.start.character, 0)
+
+        use_default = Lsp.PrepareRenameResult()
+        use_default.init_for_default_behavior(True)
+        decoded_default = Lsp.PrepareRenameResult()
+        decoded_default.init_from_variant(use_default.to_variant())
+        self.assertFalse(decoded_default.has_range)
+        self.assertTrue(decoded_default.default_behavior)
+
+        hierarchy_item = Lsp.TypeHierarchyItem.new(
+            "Example",
+            Lsp.SymbolKind.CLASS,
+            uri,
+            range_,
+            selection,
+            "class Example",
+            Lsp.SymbolTag.DEPRECATED,
+        )
+        hierarchy_item.set_data(GLib.Variant("s", "hierarchy-token"))
+        decoded_item = Lsp.TypeHierarchyItem.from_variant(
+            hierarchy_item.to_variant()
+        )
+        self.assertEqual(decoded_item.get_name(), "Example")
+        self.assertEqual(decoded_item.get_kind(), Lsp.SymbolKind.CLASS)
+        self.assertEqual(decoded_item.get_tags(), Lsp.SymbolTag.DEPRECATED)
+        self.assertEqual(decoded_item.get_data().unpack(), "hierarchy-token")
+
+    def test_vls_capabilities_and_error_codes(self) -> None:
+        symbol_caps = Lsp.DocumentSymbolClientCaps.new()
+        symbol_caps.set_dynamic_registration(True)
+        symbol_caps.set_symbol_kinds(
+            [Lsp.SymbolKind.CLASS, Lsp.SymbolKind.METHOD]
+        )
+        symbol_caps.set_hierarchical_document_symbol_support(True)
+        symbol_caps.set_supported_tags(Lsp.SymbolTag.DEPRECATED)
+        symbol_caps.set_label_support(True)
+
+        rename_caps = Lsp.RenameClientCaps.new()
+        rename_caps.set_prepare_support(True)
+        rename_caps.set_prepare_support_default_behavior(
+            Lsp.PrepareSupportDefaultBehavior.IDENTIFIER
+        )
+        rename_caps.set_honors_change_annotations(True)
+
+        hierarchy_caps = Lsp.TypeHierarchyClientCaps.new()
+        hierarchy_caps.set_dynamic_registration(True)
+        text_caps = Lsp.TextDocumentClientCaps.new()
+        text_caps.set_synchronization(
+            Lsp.TextDocumentSyncClientCaps.WILL_SAVE
+            | Lsp.TextDocumentSyncClientCaps.DID_SAVE
+        )
+        text_caps.set_document_symbol(symbol_caps)
+        text_caps.set_rename(rename_caps)
+        text_caps.set_type_hierarchy(hierarchy_caps)
+        client_caps = Lsp.ClientCaps.new()
+        client_caps.set_text_document(text_caps)
+
+        decoded_client = Lsp.ClientCaps.from_variant(client_caps.to_variant())
+        decoded_text = decoded_client.get_text_document()
+        self.assertTrue(
+            decoded_text.get_synchronization()
+            & Lsp.TextDocumentSyncClientCaps.WILL_SAVE
+        )
+        self.assertTrue(
+            decoded_text.get_document_symbol()
+            .get_hierarchical_document_symbol_support()
+        )
+        self.assertTrue(decoded_text.get_rename().get_prepare_support())
+        self.assertTrue(
+            decoded_text.get_type_hierarchy().get_dynamic_registration()
+        )
+
+        server_caps = Lsp.ServerCaps.new()
+        server_caps.set_type_hierarchy(Lsp.TypeHierarchyOptions.new())
+        decoded_server = Lsp.ServerCaps.from_variant(server_caps.to_variant())
+        self.assertIsNotNone(decoded_server.get_type_hierarchy())
+
+        expected_errors = {
+            "PARSE_ERROR": -32700,
+            "INVALID_REQUEST": -32600,
+            "METHOD_NOT_FOUND": -32601,
+            "INVALID_PARAMS": -32602,
+            "INTERNAL_ERROR": -32603,
+            "SERVER_NOT_INITIALIZED": -32002,
+            "UNKNOWN_ERROR_CODE": -32001,
+            "REQUEST_FAILED": -32803,
+            "SERVER_CANCELLED": -32802,
+            "CONTENT_MODIFIED": -32801,
+            "REQUEST_CANCELLED": -32800,
+        }
+        for name, value in expected_errors.items():
+            self.assertEqual(int(getattr(Lsp.ProtocolError, name)), value)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -120,7 +120,7 @@ public class Lsp.Editor : Jsonrpc.Server {
         Variant parameters) {
         if (exited) {
             try {
-                yield client.reply_error_async (id, ErrorCode.INVALID_REQUEST,
+                yield client.reply_error_async (id, ProtocolError.INVALID_REQUEST,
                     "editor is shutting down", cancellable);
             } catch (Error e) {
                 // ignore
@@ -131,7 +131,7 @@ public class Lsp.Editor : Jsonrpc.Server {
         try {
             switch (method) {
                 default: {
-                    yield client.reply_error_async (id, ErrorCode.METHOD_NOT_FOUND, null,
+                    yield client.reply_error_async (id, ProtocolError.METHOD_NOT_FOUND, null,
                         cancellable);
                     break;
                 }
@@ -222,10 +222,18 @@ public class Lsp.Editor : Jsonrpc.Server {
                         cancellable);
                     break;
             }
+        } catch (ProtocolError e) {
+            warning ("handling call failed - %s", e.message);
+            try {
+                yield client.reply_error_async (id, e.code, e.message,
+                    cancellable);
+            } catch (Error e2) {
+                // ignore
+            }
         } catch (Error e) {
             warning ("handling call failed - %s", e.message);
             try {
-                yield client.reply_error_async (id, ErrorCode.INTERNAL_ERROR, e.message,
+                yield client.reply_error_async (id, ProtocolError.INTERNAL_ERROR, e.message,
                     cancellable);
             } catch (Error e2) {
                 // ignore
@@ -244,7 +252,7 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     protected virtual async ApplyWorkspaceEditResult apply_workspace_edit_async (WorkspaceEdit edit,
         string? label = null) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED ("workspace/applyEdit is not implemented");
+        throw new ProtocolError.METHOD_NOT_FOUND ("workspace/applyEdit is not implemented");
     }
 
     /**
@@ -257,7 +265,7 @@ public class Lsp.Editor : Jsonrpc.Server {
         string message,
         (unowned MessageActionItem)[] actions
     ) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "window/showMessageRequest is not implemented");
     }
 
@@ -272,7 +280,7 @@ public class Lsp.Editor : Jsonrpc.Server {
         bool take_focus,
         Range? selection
     ) throws Error {
-        throw new ProtocolError.METHOD_NOT_IMPLEMENTED (
+        throw new ProtocolError.METHOD_NOT_FOUND (
             "window/showDocument is not implemented");
     }
 
@@ -350,7 +358,7 @@ public class Lsp.Editor : Jsonrpc.Server {
         InitializeParams init_params
     ) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
 
         Variant? return_value;
         yield client.call_async ("initialize", init_params.to_variant (), cancellable,
@@ -371,9 +379,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async void initialized_async () throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         yield client.send_notification_async (
             "initialized",
@@ -391,9 +399,9 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async void open_text_document_async (Uri uri, LanguageId language_id,
         string? text = null) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         if (text_documents.contains (uri))
             return;     // the document is already open
@@ -446,9 +454,9 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async void edit_text_document_async (Uri uri, int64 version,
         (unowned TextDocumentContentChangeEvent)[] content_changes) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         if (!text_documents.contains (uri))
             return;     // the document is not open
@@ -483,9 +491,9 @@ public class Lsp.Editor : Jsonrpc.Server {
         string? text = null
     ) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         if (!text_documents.contains (uri))
             return;
@@ -509,9 +517,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async void close_text_document_async (Uri uri) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         if (!text_documents.contains (uri))
             return;     // the document is not open
@@ -533,9 +541,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async void set_trace_async (TraceValue trace_value) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("value", trace_value.to_string ());
@@ -549,9 +557,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async void shutdown_async () throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         Variant? return_value;
         yield client.call_async (
@@ -567,7 +575,7 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async void exit_async () throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
 
         yield client.send_notification_async (
             "exit",
@@ -591,9 +599,9 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async CompletionItem[]? completion_async (Uri uri, Position position,
         CompletionContext? context = null) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -633,9 +641,9 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async DocumentHighlight[]? document_highlight_async (Uri uri,
         Position position) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -670,9 +678,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async Hover? hover_async (Uri uri, Position position) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -700,9 +708,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async SignatureHelp? signature_help_async (Uri uri, Position position) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -731,9 +739,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async Location[]? declaration_async (Uri uri, Position position) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -769,9 +777,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async Location[]? definition_async (Uri uri, Position position) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -808,9 +816,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async Location[]? implementation_async (Uri uri, Position position) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -848,9 +856,9 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async Location[]? references_async (Uri uri, Position position,
         ReferenceContext context) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -881,13 +889,13 @@ public class Lsp.Editor : Jsonrpc.Server {
      *
      * @param uri the URI of the document to list symbols from
      *
-     * @return a list of document symbols, or null if there are none
+     * @return hierarchical document symbols or flat symbol information
      */
-    public async DocumentSymbol[]? document_symbol_async (Uri uri) throws Error {
+    public async DocumentSymbolResult? document_symbol_async (Uri uri) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -900,14 +908,7 @@ public class Lsp.Editor : Jsonrpc.Server {
         if (return_value == null)
             return null;
 
-        DocumentSymbol[] items = {};
-        foreach (var item in return_value)
-            items += new DocumentSymbol.from_variant (
-                expect_array_element (
-                    item,
-                    VariantType.VARDICT,
-                    "textDocument/documentSymbol result"));
-        return items.length > 0 ? items : null;
+        return new DocumentSymbolResult.from_variant (return_value);
     }
 
     /**
@@ -923,9 +924,9 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async WorkspaceEdit? rename_async (Uri uri, Position position,
         string new_name) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new RenameParams (TextDocumentIdentifier.unversioned (uri), position,
             new_name);
@@ -947,14 +948,14 @@ public class Lsp.Editor : Jsonrpc.Server {
      * @param uri       the URI of the document containing the symbol
      * @param position  the position of the symbol
      *
-     * @return a range indicating the prepared rename, or a dict with
-     *         range and placeholder, or null
+     * @return the prepared rename range or default behavior, or null
      */
-    public async Variant? prepare_rename_async (Uri uri, Position position) throws Error {
+    public async PrepareRenameResult? prepare_rename_async (Uri uri,
+        Position position) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -965,7 +966,9 @@ public class Lsp.Editor : Jsonrpc.Server {
         yield client.call_async ("textDocument/prepareRename", parameters.end (), cancellable,
             out return_value);
 
-        return return_value;
+        if (return_value == null)
+            return null;
+        return PrepareRenameResult.from_variant (return_value);
     }
 
     /**
@@ -981,9 +984,9 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async CallHierarchyItem[]? prepare_call_hierarchy_async (Uri uri,
         Position position) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -1018,12 +1021,17 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async CallHierarchyIncomingCall[]?
     incoming_calls_async (CallHierarchyItem item) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
+        var parameters = new VariantDict ();
+        parameters.insert_value ("item", item.to_variant ());
         Variant? return_value;
-        yield client.call_async ("callHierarchy/incomingCalls", item.to_variant (), cancellable,
+        yield client.call_async (
+            "callHierarchy/incomingCalls",
+            parameters.end (),
+            cancellable,
             out return_value);
 
         if (return_value == null)
@@ -1050,12 +1058,17 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async CallHierarchyOutgoingCall[]?
     outgoing_calls_async (CallHierarchyItem item) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
+        var parameters = new VariantDict ();
+        parameters.insert_value ("item", item.to_variant ());
         Variant? return_value;
-        yield client.call_async ("callHierarchy/outgoingCalls", item.to_variant (), cancellable,
+        yield client.call_async (
+            "callHierarchy/outgoingCalls",
+            parameters.end (),
+            cancellable,
             out return_value);
 
         if (return_value == null)
@@ -1072,6 +1085,80 @@ public class Lsp.Editor : Jsonrpc.Server {
     }
 
     /**
+     * Prepares a type hierarchy at a document position.
+     *
+     * @since 3.17.0
+     */
+    public async TypeHierarchyItem[]? prepare_type_hierarchy_async (Uri uri,
+        Position position) throws Error {
+        if (client == null)
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
+        if (init_result == null)
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
+
+        var parameters = new VariantDict ();
+        parameters.insert_value ("textDocument",
+            TextDocumentIdentifier.unversioned (uri).to_variant ());
+        parameters.insert_value ("position", position.to_variant ());
+
+        Variant? return_value;
+        yield client.call_async ("textDocument/prepareTypeHierarchy", parameters.end (),
+            cancellable, out return_value);
+        return type_hierarchy_items_from_variant (
+            return_value, "textDocument/prepareTypeHierarchy result");
+    }
+
+    /**
+     * Resolves direct supertypes for a type hierarchy item.
+     *
+     * @since 3.17.0
+     */
+    public async TypeHierarchyItem[]? type_hierarchy_supertypes_async (
+        TypeHierarchyItem item
+    ) throws Error {
+        return yield type_hierarchy_items_async ("typeHierarchy/supertypes", item);
+    }
+
+    /**
+     * Resolves direct subtypes for a type hierarchy item.
+     *
+     * @since 3.17.0
+     */
+    public async TypeHierarchyItem[]? type_hierarchy_subtypes_async (
+        TypeHierarchyItem item
+    ) throws Error {
+        return yield type_hierarchy_items_async ("typeHierarchy/subtypes", item);
+    }
+
+    private async TypeHierarchyItem[]? type_hierarchy_items_async (string method,
+        TypeHierarchyItem item) throws Error {
+        if (client == null)
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
+        if (init_result == null)
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
+
+        var parameters = new VariantDict ();
+        parameters.insert_value ("item", item.to_variant ());
+        Variant? return_value;
+        yield client.call_async (method, parameters.end (), cancellable, out return_value);
+        return type_hierarchy_items_from_variant (return_value, @"$method result");
+    }
+
+    private static TypeHierarchyItem[]? type_hierarchy_items_from_variant (
+        Variant? return_value,
+        string result_name
+    ) throws DeserializeError, UriError {
+        if (return_value == null)
+            return null;
+
+        TypeHierarchyItem[] items = {};
+        foreach (var value in return_value)
+            items += new TypeHierarchyItem.from_variant (
+                expect_array_element (value, VariantType.VARDICT, result_name));
+        return items.length > 0 ? items : null;
+    }
+
+    /**
      * The inlay hint request is sent from the client to the server to
      * resolve inlay hints for a given text document range.
      *
@@ -1082,9 +1169,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async InlayHint[]? inlay_hint_async (Uri uri, Range range) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new InlayHintParams (TextDocumentIdentifier.unversioned (uri), range);
 
@@ -1115,9 +1202,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async InlayHint? inlay_hint_resolve_async (InlayHint hint) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         Variant? return_value;
         yield client.call_async ("inlayHint/resolve", hint.to_variant (), cancellable,
@@ -1186,9 +1273,9 @@ public class Lsp.Editor : Jsonrpc.Server {
         CodeActionTriggerKind trigger = CodeActionTriggerKind.UNSET,
         CodeActionKind[]? only = null) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("textDocument",
@@ -1227,9 +1314,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async CodeLens[]? code_lens_async (Uri uri) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new CodeLensParams (TextDocumentIdentifier.unversioned (uri));
 
@@ -1261,9 +1348,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async TextEdit[]? formatting_async (Uri uri, FormattingOptions options) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new DocumentFormattingParams (TextDocumentIdentifier.unversioned (uri),
             options);
@@ -1298,9 +1385,9 @@ public class Lsp.Editor : Jsonrpc.Server {
     public async TextEdit[]? range_formatting_async (Uri uri, Range range,
         FormattingOptions options) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters =
             new DocumentRangeFormattingParams (TextDocumentIdentifier.unversioned (uri), range,
@@ -1334,9 +1421,9 @@ public class Lsp.Editor : Jsonrpc.Server {
      */
     public async SymbolInformation[]? workspace_symbol_async (string query) throws Error {
         if (client == null)
-            throw new Lsp.ProtocolError.NO_CONNECTION ("not connected to a client");
+            throw new Lsp.ProtocolError.REQUEST_FAILED ("not connected to a client");
         if (init_result == null)
-            throw new Lsp.ProtocolError.CLIENT_NOT_INITIALIZED ("client not initialized");
+            throw new Lsp.ProtocolError.SERVER_NOT_INITIALIZED ("client not initialized");
 
         var parameters = new VariantDict ();
         parameters.insert_value ("query", new Variant.string (query));

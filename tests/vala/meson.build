@@ -9,7 +9,7 @@ position_test = executable(
   [
     'position.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -23,7 +23,7 @@ diagnostic_test = executable(
   [
     'diagnostic.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -37,7 +37,7 @@ text_document_test = executable(
   [
     'text-document.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -51,7 +51,7 @@ workspace_edit_test = executable(
   [
     'workspace-edit.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -65,7 +65,7 @@ completion_test = executable(
   [
     'completion.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -79,7 +79,7 @@ initialization_test = executable(
   [
     'initialization.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -93,7 +93,7 @@ client_capabilities_test = executable(
   [
     'client-capabilities.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -107,7 +107,7 @@ features_test = executable(
   [
     'features.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -121,7 +121,7 @@ symbols_test = executable(
   [
     'symbols.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -135,7 +135,7 @@ advanced_test = executable(
   [
     'advanced.vala',
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
 )
 
 test(
@@ -151,7 +151,7 @@ vala_server_test = executable(
     'test-server.vala',
     vala_test_stream_sources,
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
   include_directories: vala_test_stream_includes,
 )
 
@@ -169,7 +169,7 @@ vala_editor_test = executable(
     'test-server.vala',
     vala_test_stream_sources,
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
   include_directories: vala_test_stream_includes,
 )
 
@@ -185,7 +185,7 @@ server_cancellation_test = executable(
     'server-cancellation.vala',
     vala_test_stream_sources,
   ],
-  dependencies: lsp_glib_dep,
+  dependencies: lsp_glib_vala_dep,
   include_directories: vala_test_stream_includes,
 )
 

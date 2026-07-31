@@ -112,3 +112,131 @@ assertEqual(documentChange.get_uri().to_string(), uri.to_string(),
 assertEqual(decodedWorkspaceEdit.get_change_annotations()['create-file'].get_label(),
     'Create generated source',
     'change annotation did not round-trip');
+
+const symbolRange = makeRange(0, 0, 5, 1);
+const symbolSelection = makeRange(0, 6, 0, 13);
+const documentSymbol = Lsp.DocumentSymbol.new(
+    'Example',
+    Lsp.SymbolKind.CLASS,
+    symbolRange,
+    symbolSelection,
+    null,
+    Lsp.SymbolTag.UNSET,
+);
+const hierarchicalSymbols = Lsp.DocumentSymbolResult.for_document_symbols([
+    documentSymbol,
+]);
+const decodedHierarchical = Lsp.DocumentSymbolResult.from_variant(
+    hierarchicalSymbols.to_variant(),
+);
+assertEqual(decodedHierarchical.get_document_symbols()[0].get_name(), 'Example',
+    'hierarchical document symbols did not round-trip');
+assertEqual(decodedHierarchical.get_symbol_information().length, 0,
+    'hierarchical result populated its flat alternative');
+
+const symbolLocation = new Lsp.Location();
+symbolLocation.init(uri, symbolRange);
+const flatSymbol = Lsp.SymbolInformation.new(
+    'Example',
+    Lsp.SymbolKind.CLASS,
+    symbolLocation,
+    null,
+    Lsp.SymbolTag.UNSET,
+);
+const flatSymbols = Lsp.DocumentSymbolResult.for_symbol_information([flatSymbol]);
+const decodedFlat = Lsp.DocumentSymbolResult.from_variant(flatSymbols.to_variant());
+assertEqual(decodedFlat.get_document_symbols().length, 0,
+    'flat result populated its hierarchical alternative');
+assertEqual(decodedFlat.get_symbol_information()[0].get_name(), 'Example',
+    'flat symbol information did not round-trip');
+
+const preparedRename = new Lsp.PrepareRenameResult();
+preparedRename.init_for_range(symbolRange, 'old_name');
+const decodedPreparedRename = new Lsp.PrepareRenameResult();
+decodedPreparedRename.init_from_variant(preparedRename.to_variant());
+assert(decodedPreparedRename.has_range, 'prepare rename lost its range');
+assertEqual(decodedPreparedRename.placeholder, 'old_name',
+    'prepare rename lost its placeholder');
+
+const defaultRename = new Lsp.PrepareRenameResult();
+defaultRename.init_for_default_behavior(true);
+const decodedDefaultRename = new Lsp.PrepareRenameResult();
+decodedDefaultRename.init_from_variant(defaultRename.to_variant());
+assert(!decodedDefaultRename.has_range,
+    'default prepare rename unexpectedly has a range');
+assert(decodedDefaultRename.default_behavior,
+    'prepare rename lost default behavior');
+
+const hierarchyItem = Lsp.TypeHierarchyItem.new(
+    'Example',
+    Lsp.SymbolKind.CLASS,
+    uri,
+    symbolRange,
+    symbolSelection,
+    'class Example',
+    Lsp.SymbolTag.DEPRECATED,
+);
+hierarchyItem.set_data(new GLib.Variant('s', 'hierarchy-token'));
+const decodedHierarchyItem = Lsp.TypeHierarchyItem.from_variant(
+    hierarchyItem.to_variant(),
+);
+assertEqual(decodedHierarchyItem.get_name(), 'Example',
+    'type hierarchy item name did not round-trip');
+assertEqual(decodedHierarchyItem.get_kind(), Lsp.SymbolKind.CLASS,
+    'type hierarchy item kind did not round-trip');
+assertEqual(decodedHierarchyItem.get_data().deepUnpack(), 'hierarchy-token',
+    'type hierarchy data did not round-trip');
+
+const symbolCaps = Lsp.DocumentSymbolClientCaps.new();
+symbolCaps.set_dynamic_registration(true);
+symbolCaps.set_symbol_kinds([Lsp.SymbolKind.CLASS, Lsp.SymbolKind.METHOD]);
+symbolCaps.set_hierarchical_document_symbol_support(true);
+symbolCaps.set_supported_tags(Lsp.SymbolTag.DEPRECATED);
+const renameCaps = Lsp.RenameClientCaps.new();
+renameCaps.set_prepare_support(true);
+renameCaps.set_prepare_support_default_behavior(
+    Lsp.PrepareSupportDefaultBehavior.IDENTIFIER,
+);
+const hierarchyCaps = Lsp.TypeHierarchyClientCaps.new();
+hierarchyCaps.set_dynamic_registration(true);
+const textCaps = Lsp.TextDocumentClientCaps.new();
+textCaps.set_synchronization(
+    Lsp.TextDocumentSyncClientCaps.WILL_SAVE |
+    Lsp.TextDocumentSyncClientCaps.DID_SAVE,
+);
+textCaps.set_document_symbol(symbolCaps);
+textCaps.set_rename(renameCaps);
+textCaps.set_type_hierarchy(hierarchyCaps);
+const clientCaps = Lsp.ClientCaps.new();
+clientCaps.set_text_document(textCaps);
+const decodedClientCaps = Lsp.ClientCaps.from_variant(clientCaps.to_variant());
+assert(decodedClientCaps.get_text_document().get_document_symbol()
+    .get_hierarchical_document_symbol_support(),
+'hierarchical document symbol capability did not round-trip');
+assert(decodedClientCaps.get_text_document().get_rename().get_prepare_support(),
+    'prepare rename capability did not round-trip');
+assert(decodedClientCaps.get_text_document().get_type_hierarchy()
+    .get_dynamic_registration(),
+'type hierarchy capability did not round-trip');
+
+const hierarchyServerCaps = Lsp.ServerCaps.new();
+hierarchyServerCaps.set_type_hierarchy(Lsp.TypeHierarchyOptions.new());
+assert(Lsp.ServerCaps.from_variant(hierarchyServerCaps.to_variant())
+    .get_type_hierarchy() !== null,
+'type hierarchy server capability did not round-trip');
+
+const protocolErrors = new Map([
+    ['PARSE_ERROR', -32700],
+    ['INVALID_REQUEST', -32600],
+    ['METHOD_NOT_FOUND', -32601],
+    ['INVALID_PARAMS', -32602],
+    ['INTERNAL_ERROR', -32603],
+    ['SERVER_NOT_INITIALIZED', -32002],
+    ['UNKNOWN_ERROR_CODE', -32001],
+    ['REQUEST_FAILED', -32803],
+    ['SERVER_CANCELLED', -32802],
+    ['CONTENT_MODIFIED', -32801],
+    ['REQUEST_CANCELLED', -32800],
+]);
+for (const [name, value] of protocolErrors)
+    assertEqual(Lsp.ProtocolError[name], value, `${name} has the wrong wire value`);

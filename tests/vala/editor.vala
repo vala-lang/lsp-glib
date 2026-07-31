@@ -56,6 +56,40 @@ private async void run_editor (
         yield editor.initialized_async ();
         yield wait_for_server_events (server, 4);
 
+        var symbols = yield editor.document_symbol_async (uri);
+        assert (symbols != null);
+        assert (symbols.document_symbols != null);
+        assert (symbols.document_symbols.length == 1);
+        assert (symbols.document_symbols[0].name == "Example");
+        assert (symbols.symbol_information == null);
+
+        var prepared = yield editor.prepare_rename_async (
+            uri,
+            Position (2, 4));
+        assert (prepared != null);
+        assert (prepared.has_range);
+        assert (prepared.range.start.character == 2);
+        assert (prepared.range.end.character == 9);
+        assert (prepared.placeholder == "example");
+
+        var hierarchy = yield editor.prepare_type_hierarchy_async (
+            uri,
+            Position (0, 8));
+        assert (hierarchy != null);
+        assert (hierarchy.length == 1);
+        assert (hierarchy[0].name == "Example");
+
+        var supertypes = yield editor.type_hierarchy_supertypes_async (
+            hierarchy[0]);
+        assert (supertypes != null);
+        assert (supertypes.length == 1);
+        assert (supertypes[0].name == "Base");
+
+        var subtypes = yield editor.type_hierarchy_subtypes_async (
+            hierarchy[0]);
+        assert (subtypes != null);
+        assert (subtypes.length == 1);
+        assert (subtypes[0].name == "Derived");
         yield editor.open_text_document_async (
             uri,
             LanguageId.VALA,

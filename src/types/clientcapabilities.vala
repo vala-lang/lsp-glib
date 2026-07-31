@@ -593,6 +593,224 @@ namespace Lsp {
         }
     }
 
+    /**
+     * Client capabilities for document symbols.
+     */
+    [Compact (opaque = true)]
+    [CCode (ref_function = "lsp_document_symbol_client_caps_ref",
+        unref_function = "lsp_document_symbol_client_caps_unref")]
+    public class DocumentSymbolClientCaps {
+        private int ref_count = 1;
+
+        public unowned DocumentSymbolClientCaps ref () {
+            AtomicInt.add (ref this.ref_count, 1);
+            return this;
+        }
+
+        public void unref () {
+            if (AtomicInt.dec_and_test (ref this.ref_count))
+                this.free ();
+        }
+
+        private extern void free ();
+
+        public bool dynamic_registration { get; set; }
+        public SymbolKind[]? symbol_kinds { get; set; }
+        public bool hierarchical_document_symbol_support { get; set; }
+        public SymbolTag supported_tags { get; set; default = UNSET; }
+        public bool label_support { get; set; }
+
+        public DocumentSymbolClientCaps () {
+        }
+
+        public DocumentSymbolClientCaps.from_variant (Variant dict) throws DeserializeError {
+            Variant? prop;
+
+            if ((prop = lookup_property (dict, "dynamicRegistration", VariantType.BOOLEAN,
+                "DocumentSymbolClientCaps")) != null)
+                dynamic_registration = (bool) prop;
+
+            if ((prop = lookup_property (dict, "symbolKind", VariantType.VARDICT,
+                "DocumentSymbolClientCaps")) != null) {
+                var values = prop.lookup_value ("valueSet", VariantType.ARRAY);
+                if (values != null) {
+                    SymbolKind[] kinds = {};
+                    foreach (var value in values)
+                        kinds += (SymbolKind) (int64) expect_array_element (
+                            value,
+                            VariantType.INT64,
+                            "DocumentSymbolClientCaps.symbolKind.valueSet");
+                    symbol_kinds = kinds;
+                }
+            }
+
+            if ((prop = lookup_property (dict, "hierarchicalDocumentSymbolSupport",
+                VariantType.BOOLEAN, "DocumentSymbolClientCaps")) != null)
+                hierarchical_document_symbol_support = (bool) prop;
+
+            if ((prop = lookup_property (dict, "tagSupport", VariantType.VARDICT,
+                "DocumentSymbolClientCaps")) != null) {
+                var values = prop.lookup_value ("valueSet", VariantType.ARRAY);
+                if (values != null) {
+                    SymbolTag tags = SymbolTag.UNSET;
+                    foreach (var value in values) {
+                        var tag = expect_array_element (
+                            value,
+                            VariantType.INT64,
+                            "DocumentSymbolClientCaps.tagSupport.valueSet");
+                        tags |= (SymbolTag) (int) tag.get_int64 ();
+                    }
+                    supported_tags = tags;
+                }
+            }
+
+            if ((prop = lookup_property (dict, "labelSupport", VariantType.BOOLEAN,
+                "DocumentSymbolClientCaps")) != null)
+                label_support = (bool) prop;
+        }
+
+        public Variant to_variant () {
+            var dict = new VariantDict ();
+            if (dynamic_registration)
+                dict.insert_value ("dynamicRegistration", true);
+            if (symbol_kinds != null) {
+                Variant[] values = {};
+                foreach (var kind in symbol_kinds)
+                    values += new Variant.int64 (kind);
+                var symbol_kind = new VariantDict ();
+                symbol_kind.insert_value ("valueSet", values);
+                dict.insert_value ("symbolKind", symbol_kind.end ());
+            }
+            if (hierarchical_document_symbol_support)
+                dict.insert_value ("hierarchicalDocumentSymbolSupport", true);
+            if (supported_tags != SymbolTag.UNSET) {
+                Variant[] values = {};
+                if (SymbolTag.DEPRECATED in supported_tags)
+                    values += new Variant.int64 (SymbolTag.DEPRECATED);
+                var tag_support = new VariantDict ();
+                tag_support.insert_value ("valueSet", values);
+                dict.insert_value ("tagSupport", tag_support.end ());
+            }
+            if (label_support)
+                dict.insert_value ("labelSupport", true);
+            return dict.end ();
+        }
+    }
+
+    /**
+     * Default behavior advertised for prepare rename.
+     */
+    public enum PrepareSupportDefaultBehavior {
+        UNSET = 0,
+        IDENTIFIER = 1
+    }
+
+    /**
+     * Client capabilities for renaming symbols.
+     */
+    [Compact (opaque = true)]
+    [CCode (ref_function = "lsp_rename_client_caps_ref",
+        unref_function = "lsp_rename_client_caps_unref")]
+    public class RenameClientCaps {
+        private int ref_count = 1;
+
+        public unowned RenameClientCaps ref () {
+            AtomicInt.add (ref this.ref_count, 1);
+            return this;
+        }
+
+        public void unref () {
+            if (AtomicInt.dec_and_test (ref this.ref_count))
+                this.free ();
+        }
+
+        private extern void free ();
+
+        public bool dynamic_registration { get; set; }
+        public bool prepare_support { get; set; }
+        public PrepareSupportDefaultBehavior prepare_support_default_behavior {
+            get;
+            set;
+            default = UNSET;
+        }
+        public bool honors_change_annotations { get; set; }
+
+        public RenameClientCaps () {
+        }
+
+        public RenameClientCaps.from_variant (Variant dict) throws DeserializeError {
+            Variant? prop;
+            if ((prop = lookup_property (dict, "dynamicRegistration", VariantType.BOOLEAN,
+                "RenameClientCaps")) != null)
+                dynamic_registration = (bool) prop;
+            if ((prop = lookup_property (dict, "prepareSupport", VariantType.BOOLEAN,
+                "RenameClientCaps")) != null)
+                prepare_support = (bool) prop;
+            if ((prop = lookup_property (dict, "prepareSupportDefaultBehavior",
+                VariantType.INT64, "RenameClientCaps")) != null)
+                prepare_support_default_behavior = (PrepareSupportDefaultBehavior) (int64) prop;
+            if ((prop = lookup_property (dict, "honorsChangeAnnotations", VariantType.BOOLEAN,
+                "RenameClientCaps")) != null)
+                honors_change_annotations = (bool) prop;
+        }
+
+        public Variant to_variant () {
+            var dict = new VariantDict ();
+            if (dynamic_registration)
+                dict.insert_value ("dynamicRegistration", true);
+            if (prepare_support)
+                dict.insert_value ("prepareSupport", true);
+            if (prepare_support_default_behavior != PrepareSupportDefaultBehavior.UNSET)
+                dict.insert_value ("prepareSupportDefaultBehavior",
+                    new Variant.int64 (prepare_support_default_behavior));
+            if (honors_change_annotations)
+                dict.insert_value ("honorsChangeAnnotations", true);
+            return dict.end ();
+        }
+    }
+
+    /**
+     * Client capabilities for type hierarchy requests.
+     */
+    [Compact (opaque = true)]
+    [CCode (lower_case_cprefix = "lsp_type_hierarchy_client_caps_",
+        ref_function = "lsp_type_hierarchy_client_caps_ref",
+        unref_function = "lsp_type_hierarchy_client_caps_unref")]
+    public class TypeHierarchyClientCaps {
+        private int ref_count = 1;
+
+        public unowned TypeHierarchyClientCaps ref () {
+            AtomicInt.add (ref this.ref_count, 1);
+            return this;
+        }
+
+        public void unref () {
+            if (AtomicInt.dec_and_test (ref this.ref_count))
+                this.free ();
+        }
+
+        private extern void free ();
+
+        public bool dynamic_registration { get; set; }
+
+        public TypeHierarchyClientCaps () {
+        }
+
+        public TypeHierarchyClientCaps.from_variant (Variant dict) throws DeserializeError {
+            var prop = lookup_property (dict, "dynamicRegistration", VariantType.BOOLEAN,
+                "TypeHierarchyClientCaps");
+            if (prop != null)
+                dynamic_registration = (bool) prop;
+        }
+
+        public Variant to_variant () {
+            var dict = new VariantDict ();
+            if (dynamic_registration)
+                dict.insert_value ("dynamicRegistration", true);
+            return dict.end ();
+        }
+    }
+
     [Flags]
     public enum TextDocumentSyncClientCaps {
         NONE = 0,
@@ -600,19 +818,19 @@ namespace Lsp {
         /**
          * The client supports sending 'will save' notifications.
          */
-        WILL_SAVE,
+        WILL_SAVE = 1 << 0,
 
         /**
          * The client supports sending a 'will save' request and waits for
          * a response providing text edits which will be applied to the
          * document before it is saved.
          */
-        WILL_SAVE_WAIT_UNTIL,
+        WILL_SAVE_WAIT_UNTIL = 1 << 1,
 
         /**
          * The client supports 'did save' notifications.
          */
-        DID_SAVE
+        DID_SAVE = 1 << 2
     }
 
     /**
@@ -642,7 +860,13 @@ namespace Lsp {
             default = NONE;
         }
 
-        public CompletionClientCaps completion { get; set; }
+        public CompletionClientCaps? completion { get; set; }
+        public DocumentSymbolClientCaps? document_symbol { get; set; }
+        public RenameClientCaps? rename { get; set; }
+        public TypeHierarchyClientCaps? type_hierarchy { get; set; }
+
+        public TextDocumentClientCaps () {
+        }
 
         public TextDocumentClientCaps.from_variant (Variant dict) throws DeserializeError {
             Variant? prop;
@@ -664,6 +888,12 @@ namespace Lsp {
 
             if ((prop = dict.lookup_value ("completion", VariantType.VARDICT)) != null)
                 completion = new CompletionClientCaps.from_variant (prop);
+            if ((prop = dict.lookup_value ("documentSymbol", VariantType.VARDICT)) != null)
+                document_symbol = new DocumentSymbolClientCaps.from_variant (prop);
+            if ((prop = dict.lookup_value ("rename", VariantType.VARDICT)) != null)
+                rename = new RenameClientCaps.from_variant (prop);
+            if ((prop = dict.lookup_value ("typeHierarchy", VariantType.VARDICT)) != null)
+                type_hierarchy = new TypeHierarchyClientCaps.from_variant (prop);
         }
 
         public Variant to_variant () {
@@ -682,6 +912,12 @@ namespace Lsp {
 
             if (completion != null)
                 dict.insert_value ("completion", completion.to_variant ());
+            if (document_symbol != null)
+                dict.insert_value ("documentSymbol", document_symbol.to_variant ());
+            if (rename != null)
+                dict.insert_value ("rename", rename.to_variant ());
+            if (type_hierarchy != null)
+                dict.insert_value ("typeHierarchy", type_hierarchy.to_variant ());
 
             return dict.end ();
         }

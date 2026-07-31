@@ -23,6 +23,7 @@ namespace Lsp {
      * A symbol kind.
      */
     public enum SymbolKind {
+        UNSET = 0,
         FILE = 1,
         MODULE = 2,
         NAMESPACE = 3,
@@ -312,6 +313,100 @@ namespace Lsp {
                 dict.insert_value ("containerName", new Variant.string (container_name));
             dict.insert_value ("location", location.to_variant ());
             return dict.end ();
+        }
+    }
+
+    /**
+     * The two result forms supported by `textDocument/documentSymbol`.
+     *
+     * Exactly one member is non-null. Since an empty wire array does not carry
+     * enough information to distinguish the alternatives, it is represented
+     * as an empty {@link document_symbols} array.
+     */
+    [Compact (opaque = true)]
+    [CCode (ref_function = "lsp_document_symbol_result_ref",
+        unref_function = "lsp_document_symbol_result_unref")]
+    public class DocumentSymbolResult {
+        private int ref_count = 1;
+
+        public unowned DocumentSymbolResult ref () {
+            AtomicInt.add (ref this.ref_count, 1);
+            return this;
+        }
+
+        public void unref () {
+            if (AtomicInt.dec_and_test (ref this.ref_count))
+                this.free ();
+        }
+
+        private extern void free ();
+
+        public DocumentSymbol[]? document_symbols { get; private set; }
+        public SymbolInformation[]? symbol_information { get; private set; }
+
+        public DocumentSymbolResult.for_document_symbols (
+            DocumentSymbol[] document_symbols) {
+            this.document_symbols = document_symbols;
+        }
+
+        public DocumentSymbolResult.for_symbol_information (
+            SymbolInformation[] symbol_information) {
+            this.symbol_information = symbol_information;
+        }
+
+        public DocumentSymbolResult.from_variant (Variant array) throws DeserializeError,
+        UriError {
+            if (!array.is_of_type (VariantType.ARRAY))
+                throw new DeserializeError.INVALID_TYPE (
+                    "document symbol result must be an array");
+
+            DocumentSymbol[] document_symbols = {};
+            SymbolInformation[] symbol_information = {};
+            bool? uses_symbol_information = null;
+
+            foreach (var element in array) {
+                var item = expect_array_element (
+                    element,
+                    VariantType.VARDICT,
+                    "DocumentSymbolResult");
+                bool is_symbol_information =
+                    item.lookup_value ("location", VariantType.VARDICT) != null;
+
+                if (uses_symbol_information != null &&
+                    uses_symbol_information != is_symbol_information)
+                    throw new DeserializeError.UNEXPECTED_ELEMENT (
+                        "document symbol result alternatives cannot be mixed");
+
+                uses_symbol_information = is_symbol_information;
+                if (is_symbol_information)
+                    symbol_information += new SymbolInformation.from_variant (item);
+                else
+                    document_symbols += new DocumentSymbol.from_variant (item);
+            }
+
+            if (uses_symbol_information == true) {
+                this.document_symbols = null;
+                this.symbol_information = symbol_information;
+            } else {
+                this.document_symbols = document_symbols;
+            }
+        }
+
+        public Variant to_variant () {
+            // A zero-length array may be marshalled as null by language
+            // bindings. Treat that ambiguous form as the canonical empty
+            // DocumentSymbol result.
+            assert (document_symbols == null || symbol_information == null);
+
+            Variant[] values = {};
+            if (document_symbols != null) {
+                foreach (unowned var symbol in document_symbols)
+                    values += symbol.to_variant ();
+            } else if (symbol_information != null) {
+                foreach (unowned var symbol in symbol_information)
+                    values += symbol.to_variant ();
+            }
+            return new Variant.array (VariantType.VARDICT, values);
         }
     }
 
