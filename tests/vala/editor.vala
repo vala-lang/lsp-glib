@@ -45,10 +45,13 @@ private async void run_editor (
             parse_uri ("file:///workspace"),
             "workspace");
         var uri = parse_uri ("file:///server-test.vala");
+        var init_params = new InitializeParams.with_workspace_folders (workspace);
+        init_params.trace = TraceValue.MESSAGES;
 
-        yield editor.initialize_async (workspace);
+        yield editor.initialize_with_params_async (init_params);
         yield wait_for_server_events (server, 2);
         assert (editor.init_result != null);
+        assert (server.trace_value == TraceValue.MESSAGES);
         assert (server.initialize_locale == null);
         assert (server.initialize_root_uri == "file:///workspace");
         assert (server.initialize_workspace_count == 1);
@@ -140,7 +143,7 @@ private async void run_editor (
             "elapsed=2ms");
         yield wait_for_editor_events (editor, 3);
         assert (editor.trace_message == "request complete");
-        assert (editor.trace_verbose == "elapsed=2ms");
+        assert (editor.trace_verbose == null);
 
         Diagnostic[] diagnostics = {
             new Diagnostic (

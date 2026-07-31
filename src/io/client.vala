@@ -28,6 +28,7 @@
  */
 public class Lsp.Client : Object {
     Jsonrpc.Client client;
+    TraceValue trace_value;
 
     /**
      * Cancels work associated with the message currently being handled.
@@ -39,9 +40,10 @@ public class Lsp.Client : Object {
      */
     public Cancellable cancellable { get; private set; }
 
-    internal Client (Jsonrpc.Client client, Cancellable cancellable) {
+    internal Client (Jsonrpc.Client client, Cancellable cancellable, TraceValue trace_value) {
         this.client = client;
         this.cancellable = cancellable;
+        this.trace_value = trace_value;
     }
 
     /**
@@ -192,9 +194,11 @@ public class Lsp.Client : Object {
      *                `trace` configuration is set to `verbose`
      */
     public async void log_trace_async (string message, string? verbose = null) throws Error {
+        if (trace_value == TraceValue.OFF)
+            return;
         var dict = new VariantDict ();
         dict.insert_value ("message", message);
-        if (verbose != null)
+        if (trace_value == TraceValue.VERBOSE && verbose != null)
             dict.insert_value ("verbose", verbose);
 
         yield client.send_notification_async ("$/logTrace", dict.end (), cancellable);

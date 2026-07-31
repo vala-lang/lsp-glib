@@ -57,7 +57,7 @@ editor_operation_ready (GObject *source,
   switch (operation->kind)
     {
     case EDITOR_OPERATION_INITIALIZE:
-      lsp_editor_initialize_finish (
+      lsp_editor_initialize_with_params_finish (
           editor,
           result,
           &operation->error);
@@ -261,6 +261,7 @@ test_server_and_editor (void)
       G_URI_FLAGS_NONE,
       &error);
   g_autoptr (LspWorkspaceFolder) workspace = NULL;
+  g_autoptr (LspInitializeParams) init_params = NULL;
   g_autoptr (LspDiagnostic) diagnostic = NULL;
   LspDiagnostic *diagnostics[1];
   g_autoptr (LspWorkspaceEdit) edit = NULL;
@@ -272,6 +273,15 @@ test_server_and_editor (void)
   workspace = lsp_workspace_folder_new (
       workspace_uri,
       "workspace");
+  init_params = lsp_initialize_params_new_with_workspace_folders (
+      workspace,
+      NULL,
+      0,
+      &error);
+  g_assert_no_error (error);
+  lsp_initialize_params_set_trace (
+      init_params,
+      LSP_TRACE_VALUE_MESSAGES);
 
   /* Both peers can issue requests over the same duplex stream pair. */
   create_test_stream_pair (&server_stream, &editor_stream);
@@ -282,17 +292,19 @@ test_server_and_editor (void)
       JSONRPC_SERVER (editor),
       editor_stream);
 
-  lsp_editor_initialize_async (
+  lsp_editor_initialize_with_params_async (
       LSP_EDITOR (editor),
-      workspace,
-      NULL,
-      0,
+      init_params,
       editor_operation_ready,
       &editor_operation);
   wait_for_completion (
       &editor_operation.completed,
       &editor_operation.error);
   wait_for_server_events (server, 2);
+  g_assert_cmpint (
+      lsp_server_get_trace_value (LSP_SERVER (server)),
+      ==,
+      LSP_TRACE_VALUE_MESSAGES);
 
   editor_operation = (EditorOperation) {
     .kind = EDITOR_OPERATION_INITIALIZED,
@@ -412,7 +424,7 @@ test_server_and_editor (void)
     wait_for_editor_events (editor, 3);
   }
   g_assert_cmpstr (editor->trace_message, ==, "request complete");
-  g_assert_cmpstr (editor->trace_verbose, ==, "elapsed=2ms");
+  g_assert_null (editor->trace_verbose);
 
   lsp_position_init (&start, 1, 2);
   lsp_position_init (&end, 1, 7);

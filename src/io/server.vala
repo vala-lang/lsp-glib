@@ -73,7 +73,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
         if (is_shutting_down && method != "exit" && method != "$/cancelRequest")
             return;
 
-        var lsp_client = new Client (client, cancellable);
+        var lsp_client = new Client (client, cancellable, trace_value);
         try {
             switch (method) {
                 case "exit":
@@ -161,19 +161,21 @@ public abstract class Lsp.Server : Jsonrpc.Server {
                 return;
             }
 
-            var lsp_client = new Client (client, request_cancellable);
+            var lsp_client = new Client (client, request_cancellable, trace_value);
             switch (method) {
                 default: {
                     yield reply_error_async (client, id, ProtocolError.METHOD_NOT_FOUND);
                     break;
                 }
 
-                case "initialize":
+                case "initialize": {
                     var init_params = new InitializeParams.from_variant (parameters);
+                    trace_value = init_params.trace;
                     var init_result = yield initialize_async (lsp_client, init_params);
                     yield reply_result_async (client, id, init_result.to_variant (),
                         request_cancellable);
                     break;
+                }
 
                 case "shutdown":
                     is_shutting_down = true;
