@@ -33,6 +33,13 @@ def make_range(
 
 
 class TypedSerializationTest(unittest.TestCase):
+    def test_genie_language_id(self) -> None:
+        self.assertEqual(Lsp.language_id_to_string(Lsp.LanguageId.GENIE), "genie")
+        self.assertEqual(
+            Lsp.language_id_parse_string("genie"),
+            Lsp.LanguageId.GENIE,
+        )
+
     def test_completion_list(self) -> None:
         edit = Lsp.TextEdit()
         edit.init(make_range(3, 4, 3, 9), "print(${1:value})", None)
@@ -51,6 +58,7 @@ class TypedSerializationTest(unittest.TestCase):
         )
         item.set_label_details(label_details)
         item.set_tags(Lsp.CompletionItemTag.DEPRECATED)
+        item.set_deprecated(True)
         item.set_documentation(documentation)
         item.set_commit_chars([";", "("])
         item.set_insert_text_format(Lsp.InsertTextFormat.SNIPPET)
@@ -65,6 +73,7 @@ class TypedSerializationTest(unittest.TestCase):
         decoded_items = decoded.get_items()
         self.assertEqual(len(decoded_items), 1)
         self.assertEqual(decoded_items[0].get_label(), "print")
+        self.assertTrue(decoded_items[0].get_deprecated())
         self.assertEqual(
             decoded_items[0].get_insert_text_format(),
             Lsp.InsertTextFormat.SNIPPET,

@@ -100,6 +100,7 @@ test_completion_item_round_trip (void)
   lsp_completion_item_set_tags (
       original,
       LSP_COMPLETION_ITEM_TAG_DEPRECATED);
+  lsp_completion_item_set_deprecated (original, TRUE);
   lsp_completion_item_set_detail (
       original,
       "void print (string value)");
@@ -142,6 +143,7 @@ test_completion_item_round_trip (void)
   g_assert_true (
       LSP_COMPLETION_ITEM_TAG_DEPRECATED &
       lsp_completion_item_get_tags (decoded));
+  g_assert_true (lsp_completion_item_get_deprecated (decoded));
   g_assert_cmpint (
       lsp_completion_item_get_insert_text_format (decoded),
       ==,

@@ -419,6 +419,14 @@ namespace Lsp {
         public CompletionItemTag tags { get; set; default = NONE; }
 
         /**
+         * Whether this completion item is deprecated.
+         *
+         * This protocol field is deprecated in favor of {@link tags}, but is
+         * retained for clients that do not support completion item tags.
+         */
+        public bool deprecated { get; set; }
+
+        /**
          * A human-readable string with additional information about this
          * item, like type or symbol information.
          */
@@ -586,6 +594,10 @@ namespace Lsp {
                 tags = parsed_tags;
             }
 
+            if ((prop = lookup_property (dict, "deprecated", VariantType.BOOLEAN,
+                "CompletionItem")) != null)
+                deprecated = (bool) prop;
+
             if ((prop = lookup_property (dict, "detail", VariantType.STRING,
                 "CompletionItem")) != null)
                 detail = (string) prop;
@@ -669,6 +681,9 @@ namespace Lsp {
                     tag_list += new Variant.int64 ((int64) CompletionItemTag.DEPRECATED);
                 dict.insert_value ("tags", new Variant.array (VariantType.INT64, tag_list));
             }
+
+            if (deprecated)
+                dict.insert_value ("deprecated", deprecated);
 
             if (detail != null)
                 dict.insert_value ("detail", detail);

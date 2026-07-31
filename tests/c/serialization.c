@@ -72,6 +72,19 @@ test_text_document_item_round_trip (void)
 }
 
 static void
+test_genie_language_id (void)
+{
+  g_assert_cmpstr (
+      lsp_language_id_to_string (LSP_LANGUAGE_ID_GENIE),
+      ==,
+      "genie");
+  g_assert_cmpint (
+      lsp_language_id_parse_string ("genie"),
+      ==,
+      LSP_LANGUAGE_ID_GENIE);
+}
+
+static void
 test_markup_content_deserialization (void)
 {
   GVariantBuilder builder;
@@ -333,6 +346,9 @@ main (int argc, char *argv[])
   g_test_add_func (
       "/c/serialization/text-document-item",
       test_text_document_item_round_trip);
+  g_test_add_func (
+      "/c/serialization/genie-language-id",
+      test_genie_language_id);
   g_test_add_func (
       "/c/deserialization/markup-content",
       test_markup_content_deserialization);

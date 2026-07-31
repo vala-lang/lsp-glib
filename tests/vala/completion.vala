@@ -70,6 +70,7 @@ private void test_completion_item_round_trip () {
                 "(value)",
                 "GLib"),
             tags = CompletionItemTag.DEPRECATED,
+            deprecated = true,
             detail = "void print (string value)",
             documentation = new MarkupContent (
                 MarkupKind.MARKDOWN,
@@ -109,6 +110,7 @@ private void test_completion_item_round_trip () {
         assert (decoded.label_details.detail == "(value)");
         assert (decoded.label_details.description == "GLib");
         assert (CompletionItemTag.DEPRECATED in decoded.tags);
+        assert (decoded.deprecated);
         assert (decoded.detail == "void print (string value)");
         assert (decoded.documentation != null);
         assert (decoded.documentation.kind == MarkupKind.MARKDOWN);

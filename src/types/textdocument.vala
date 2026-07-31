@@ -86,7 +86,8 @@ namespace Lsp {
         VALA,
         XML,
         XSL,
-        YAML;
+        YAML,
+        GENIE;
 
         public unowned string to_string () {
             switch (this) {
@@ -206,13 +207,15 @@ namespace Lsp {
                     return "xsl";
                 case YAML:
                     return "yaml";
+                case GENIE:
+                    return "genie";
             }
 
             assert_not_reached ();
         }
 
         public static LanguageId parse_string (string value) {
-            for (int id = (int) UNKNOWN; id <= (int) YAML; id++) {
+            for (int id = (int) UNKNOWN; id <= (int) GENIE; id++) {
                 var language_id = (LanguageId) id;
                 if (language_id.to_string () == value)
                     return language_id;

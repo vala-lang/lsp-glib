@@ -21,6 +21,11 @@ const makeRange = (startLine, startCharacter, endLine, endCharacter) => {
     return range;
 };
 
+assertEqual(Lsp.language_id_to_string(Lsp.LanguageId.GENIE), 'genie',
+    'Genie language identifier did not serialize');
+assertEqual(Lsp.language_id_parse_string('genie'), Lsp.LanguageId.GENIE,
+    'Genie language identifier did not parse');
+
 const edit = new Lsp.TextEdit();
 edit.init(makeRange(3, 4, 3, 9), 'print(${1:value})', null);
 
@@ -30,6 +35,7 @@ item.set_documentation(Lsp.MarkupContent.new(
     Lsp.MarkupKind.MARKDOWN,
     '**Print** a value.',
 ));
+item.set_deprecated(true);
 item.set_commit_chars([';', '(']);
 item.set_insert_text_format(Lsp.InsertTextFormat.SNIPPET);
 item.set_text_edit(edit);
@@ -41,6 +47,7 @@ const completion = Lsp.CompletionList.from_variant(
 const [decodedItem] = completion.get_items();
 assert(completion.get_is_incomplete(), 'completion list lost incomplete state');
 assertEqual(decodedItem.get_label(), 'print', 'completion label did not round-trip');
+assert(decodedItem.get_deprecated(), 'completion deprecated state did not round-trip');
 assertEqual(decodedItem.get_insert_text_format(), Lsp.InsertTextFormat.SNIPPET,
     'insert text format did not round-trip');
 assertEqual(decodedItem.get_text_edit().get_new_text(), 'print(${1:value})',

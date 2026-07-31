@@ -80,6 +80,11 @@ private void test_document_item_round_trip () {
     }
 }
 
+private void test_genie_language_id () {
+    assert (LanguageId.GENIE.to_string () == "genie");
+    assert (LanguageId.parse_string ("genie") == LanguageId.GENIE);
+}
+
 private void test_content_change_round_trip () {
     try {
         var changed_range = Range (
@@ -140,6 +145,9 @@ private int main (string[] args) {
     Test.add_func (
         "/serialization/text-document/item",
         test_document_item_round_trip);
+    Test.add_func (
+        "/serialization/text-document/genie-language-id",
+        test_genie_language_id);
     Test.add_func (
         "/serialization/text-document/content-change",
         test_content_change_round_trip);
