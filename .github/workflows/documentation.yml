@@ -1,0 +1,79 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build documentation
+    runs-on: ubuntu-latest
+    container: fedora:44
+    timeout-minutes: 20
+
+    steps:
+      - name: Install dependencies
+        run: >-
+          dnf install -y
+          gcc
+          gi-docgen
+          git
+          gobject-introspection-devel
+          jsonrpc-glib-devel
+          meson
+          ninja-build
+          python3
+          vala
+          valadoc
+
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Configure build
+        run: meson setup build
+
+      - name: Build documentation site
+        run: meson compile -C build pages
+
+      - name: Upload Pages artifact
+        if: >-
+          github.ref == 'refs/heads/master' &&
+          github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/doc/pages
+
+  deploy:
+    name: Deploy documentation
+    if: >-
+      github.ref == 'refs/heads/master' &&
+      github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: github-pages
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

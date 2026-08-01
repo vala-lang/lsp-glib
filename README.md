@@ -129,7 +129,20 @@ request.
 
 ### Docs
 
-Run `meson build && meson compile -C build`. Docs will be located in `build/src/Lsp-3.0`.
+The latest API documentation is published at
+[vala-lang.github.io/lsp-glib](https://vala-lang.github.io/lsp-glib/), with
+separate references for
+[GObject Introspection](https://vala-lang.github.io/lsp-glib/gi/) and
+[Vala](https://vala-lang.github.io/lsp-glib/vala/).
+
+Build the same combined site locally with:
+
+```sh
+meson setup build
+meson compile -C build pages
+```
+
+The generated site is located in `build/doc/pages`.
 
 ### Tests
 

@@ -43,7 +43,7 @@ if get_option('gi-docgen')
                                  output: 'lsp-glib.toml',
                                  configuration: toml_conf)
 
-  custom_target('gi-docgen-api-docs',
+  lsp_glib_gi_docs = custom_target('gi-docgen-api-docs',
     input: [lsp_glib_toml],
     output: 'gi-docgen',
     command: [
@@ -59,5 +59,29 @@ if get_option('gi-docgen')
     ],
     build_by_default: true,
     depends: liblsp_glib,
+  )
+endif
+
+if get_option('enable_valadoc') and get_option('gi-docgen')
+  pages_python = import('python').find_installation('python3')
+  pages_script = files('prepare-pages.py')
+  pages_assets = files(
+    'pages/index.html',
+    'pages/style.css',
+  )
+
+  custom_target('pages',
+    input: pages_assets,
+    output: 'pages',
+    command: [
+      pages_python,
+      pages_script,
+      meson.current_source_dir() / 'pages',
+      meson.current_build_dir() / 'gi-docgen',
+      meson.current_build_dir() / 'valadoc' / 'lsp-glib-' + API_VERSION,
+      '@OUTPUT@',
+    ],
+    depends: [lsp_glib_docs, lsp_glib_gi_docs],
+    build_always_stale: true,
   )
 endif
