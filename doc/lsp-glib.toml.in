@@ -6,9 +6,14 @@ website_url = "https://vala-lang.github.io/lsp-glib/"
 authors = "Princeton Ferro"
 license = "LGPL-2.1"
 description = "LSP library built on GLib. Designed for both editors and servers."
-dependencies = ["GObject-2.0", "Jsonrpc-1.0", "Gio-2.0"]
+dependencies = ["GLib-2.0", "GObject-2.0", "Gio-2.0", "Jsonrpc-1.0"]
 devhelp = false
 search_index = false
+
+  [dependencies."GLib-2.0"]
+  name = "GLib"
+  description = "The base utility library"
+  docs_url = "https://docs.gtk.org/glib/"
 
   [dependencies."GObject-2.0"]
   name = "GObject"
@@ -18,16 +23,20 @@ search_index = false
   [dependencies."Jsonrpc-1.0"]
   name = "Jsonrpc-glib"
   description = "Library to communicate using the JSON-RPC 2.0 specification."
-  docs_url = "https://gnome.pages.gitlab.gnome.org/jsonrpc-glib/"
+  docs_url = "https://gnome.pages.gitlab.gnome.org/jsonrpc-glib/jsonrpc-glib/"
 
   [dependencies."Gio-2.0"]
   name = "Gio"
   description = "GObject Interfaces and Objects, Networking, IPC, and I/O"
+  docs_url = "https://docs.gtk.org/gio/"
 
 [theme]
 name = "basic"
 show_index_summary = true
 show_class_hierarchy = true
 
-[source-location]
-base_url = "https://github.com/vala-lang/lsp-glib/tree/master/"
+[extra]
+urlmap_file = "urlmap.js"
+
+# Stable Valadoc does not record source locations for documentation comments.
+# Restore source links when the temporary Valadoc GIR is no longer needed.

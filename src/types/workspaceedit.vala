@@ -436,7 +436,7 @@ namespace Lsp {
     }
 
     /**
-     * The result returned from the {@link workspace/applyEdit} request.
+     * The result returned from the `workspace/applyEdit` request.
      */
     public class ApplyWorkspaceEditResult {
         /**

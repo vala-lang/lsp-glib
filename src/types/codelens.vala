@@ -85,7 +85,7 @@ namespace Lsp {
     }
 
     /**
-     * The parameters of a {@link textDocument/codeLens} request.
+     * The parameters of a `textDocument/codeLens` request.
      */
     public class CodeLensParams {
         /**

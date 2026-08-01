@@ -43,6 +43,9 @@ jobs:
       - name: Build documentation site
         run: meson compile -C build pages
 
+      - name: Test documentation
+        run: meson test -C build --suite docs --print-errorlogs
+
       - name: Upload Pages artifact
         if: >-
           github.ref == 'refs/heads/master' &&

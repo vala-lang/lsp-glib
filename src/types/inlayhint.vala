@@ -323,7 +323,7 @@ namespace Lsp {
     }
 
     /**
-     * The parameters of a {@link textDocument/inlayHint} request.
+     * The parameters of a `textDocument/inlayHint` request.
      *
      * @since 3.17.0
      */

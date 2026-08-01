@@ -22,11 +22,6 @@ def prepare_pages(landing, gi_docs, vala_docs, output):
     copy_tree(gi_docs, output / "gi")
     copy_tree(vala_docs, output / "vala")
 
-    vala_index = output / "vala" / "index.htm"
-    if not vala_index.is_file():
-        raise RuntimeError(f"Valadoc entry point does not exist: {vala_index}")
-    shutil.copy2(vala_index, output / "vala" / "index.html")
-
     expected_files = (
         output / "index.html",
         output / "gi" / "index.html",

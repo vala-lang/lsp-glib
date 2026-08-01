@@ -20,7 +20,7 @@
 
 namespace Lsp {
     /**
-     * The parameters of a {@link textDocument/rename} request.
+     * The parameters of a `textDocument/rename` request.
      */
     public class RenameParams {
         /**
@@ -64,7 +64,7 @@ namespace Lsp {
     }
 
     /**
-     * The parameters of a {@link textDocument/prepareRename} request.
+     * The parameters of a `textDocument/prepareRename` request.
      */
     public class PrepareRenameParams {
         /**
@@ -100,7 +100,7 @@ namespace Lsp {
     /**
      * The result of checking whether a symbol can be renamed.
      *
-     * When {@link has_range} is false, this represents the protocol's
+     * When `has_range` is false, this represents the protocol's
      * `defaultBehavior` result. Keeping the range inline avoids allocating it
      * solely to represent the alternative result shape.
      */

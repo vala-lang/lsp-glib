@@ -33,7 +33,7 @@ namespace Lsp {
     }
 
     /**
-     * Formatting options for a {@link textDocument/formatting} request.
+     * Formatting options for a `textDocument/formatting` request.
      */
     public struct FormattingOptions {
         /**
@@ -91,7 +91,7 @@ namespace Lsp {
     }
 
     /**
-     * The parameters of a {@link textDocument/formatting} request.
+     * The parameters of a `textDocument/formatting` request.
      */
     public class DocumentFormattingParams {
         /**
@@ -127,7 +127,7 @@ namespace Lsp {
     }
 
     /**
-     * The parameters of a {@link textDocument/rangeFormatting} request.
+     * The parameters of a `textDocument/rangeFormatting` request.
      */
     public class DocumentRangeFormattingParams {
         /**

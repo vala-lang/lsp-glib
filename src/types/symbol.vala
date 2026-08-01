@@ -448,8 +448,8 @@ namespace Lsp {
     /**
      * A workspace symbol is a symbol that can be returned from the
      * workspace/symbol request. It is similar to {@link SymbolInformation}
-     * but with an extended {@link location} that can also be a
-     * {@link Uri} + {@link Range} literal.
+     * but with an extended location that can also be a
+     * {@link GLib.Uri} + {@link Range} literal.
      *
      * @since 3.17.0
      */
