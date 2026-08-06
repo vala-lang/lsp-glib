@@ -98,12 +98,10 @@ lsp_glib_dep = declare_dependency(
 )
 
 # Generated VAPIs are source dependencies in Meson and make C-only targets look
-# like Vala targets. Keep them in a Vala-specific dependency for subprojects.
+# like Vala targets. Fallback wraps choose the dependency matching the consumer.
 lsp_glib_vala_dep = declare_dependency(
   link_with: liblsp_glib,
   dependencies: vala_dependencies,
   include_directories: [include_directories('.')],
   version: meson.project_version(),
 )
-
-meson.override_dependency('lsp-glib-' + API_VERSION, lsp_glib_dep)

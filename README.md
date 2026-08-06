@@ -16,6 +16,27 @@ Design ideas:
     pointer chasing
   - No use of `libgee`. Prefer built-in GLib data structures
 
+### Meson
+
+Installed packages can be used directly with
+`dependency('lsp-glib-3.0')`. For a subproject fallback, map the package to
+the dependency matching the consumer language. C projects use:
+
+```ini
+[provide]
+lsp-glib-3.0 = lsp_glib_dep
+```
+
+Vala projects use:
+
+```ini
+[provide]
+lsp-glib-3.0 = lsp_glib_vala_dep
+```
+
+The Vala dependency also carries generated VAPIs required by transitive
+subprojects.
+
 ### Protocol Support
 
 #### Base Protocol
