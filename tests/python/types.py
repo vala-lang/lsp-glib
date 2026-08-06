@@ -60,14 +60,15 @@ class TypedSerializationTest(unittest.TestCase):
         item.set_tags(Lsp.CompletionItemTag.DEPRECATED)
         item.set_deprecated(True)
         item.set_documentation(documentation)
-        item.set_commit_chars([";", "("])
+        item.add_commit_char(";")
+        item.add_commit_char("(")
         item.set_insert_text_format(Lsp.InsertTextFormat.SNIPPET)
         item.set_text_edit(edit)
         item.set_data(GLib.Variant("s", "completion-token"))
 
-        decoded = Lsp.CompletionList.from_variant(
-            Lsp.CompletionList.new(True, [item]).to_variant()
-        )
+        completion = Lsp.CompletionList.new(True, [])
+        completion.add_item(item)
+        decoded = Lsp.CompletionList.from_variant(completion.to_variant())
 
         self.assertTrue(decoded.get_is_incomplete())
         decoded_items = decoded.get_items()
@@ -168,7 +169,7 @@ class TypedSerializationTest(unittest.TestCase):
         params.set_locale("en-US")
         params.set_root_uri(root_uri)
         params.set_trace(Lsp.TraceValue.MESSAGES)
-        params.set_workspaces([workspace])
+        params.add_workspace(workspace)
         params.set_initialization_options(
             GLib.Variant("s", "initialization-token")
         )
@@ -262,7 +263,10 @@ class TypedSerializationTest(unittest.TestCase):
             "temporary",
             Lsp.InlayHintKind.TYPE,
         )
-        hint.set_label_parts([part])
+        hint_edit = Lsp.TextEdit()
+        hint_edit.init(make_range(2, 9, 2, 9), ": string", None)
+        hint.add_label_part(part)
+        hint.add_text_edit(hint_edit)
         hint.set_padding(
             Lsp.InlayHintPadding.LEFT | Lsp.InlayHintPadding.RIGHT
         )
@@ -270,6 +274,7 @@ class TypedSerializationTest(unittest.TestCase):
         decoded_hint = Lsp.InlayHint.from_variant(hint.to_variant())
         self.assertIsNone(decoded_hint.get_label())
         self.assertEqual(decoded_hint.get_label_parts()[0].get_value(), ": string")
+        self.assertEqual(decoded_hint.get_text_edits()[0].get_new_text(), ": string")
 
         uri = GLib.Uri.parse(
             "file:///workspace/main.vala",

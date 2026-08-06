@@ -50,7 +50,15 @@ namespace Lsp {
          * valid inside an identifier (for example `.` in JavaScript) list them in
          * `triggerCharacters`.
          */
-        public string[]? triggers { get; set; }
+        private string[]? _triggers;
+        public string[]? triggers {
+            get {
+                return _triggers;
+            }
+            set {
+                _triggers = value;
+            }
+        }
 
         /**
          * The list of all possible characters that commit a completion. This field
@@ -63,7 +71,15 @@ namespace Lsp {
          *
          * @since 3.2.0
          */
-        public string[]? commit_triggers { get; set; }
+        private string[]? _commit_triggers;
+        public string[]? commit_triggers {
+            get {
+                return _commit_triggers;
+            }
+            set {
+                _commit_triggers = value;
+            }
+        }
 
         /**
          * The server provides support to resolve additional information for a
@@ -74,6 +90,20 @@ namespace Lsp {
         public CompletionOptions (bool supports_resolve, string[]? triggers = null) {
             this.supports_resolve = supports_resolve;
             this.triggers = triggers;
+        }
+
+        /**
+         * Appends a trigger character to {@link triggers}.
+         */
+        public void add_trigger (string trigger) {
+            _triggers += trigger;
+        }
+
+        /**
+         * Appends a commit character to {@link commit_triggers}.
+         */
+        public void add_commit_trigger (string trigger) {
+            _commit_triggers += trigger;
         }
 
         public CompletionOptions.from_variant (Variant variant) throws DeserializeError {
@@ -113,7 +143,15 @@ namespace Lsp {
         /**
          * The characters that trigger signature help automatically.
          */
-        public string[]? triggers { get; set; }
+        private string[]? _triggers;
+        public string[]? triggers {
+            get {
+                return _triggers;
+            }
+            set {
+                _triggers = value;
+            }
+        }
 
         /**
          * List of characters that re-trigger signature help.
@@ -124,10 +162,32 @@ namespace Lsp {
          *
          * @since 3.15.0
          */
-        public string[]? retriggers { get; set; }
+        private string[]? _retriggers;
+        public string[]? retriggers {
+            get {
+                return _retriggers;
+            }
+            set {
+                _retriggers = value;
+            }
+        }
 
         public SignatureHelpOptions (string[]? triggers = null) {
             this.triggers = triggers;
+        }
+
+        /**
+         * Appends a trigger character to {@link triggers}.
+         */
+        public void add_trigger (string trigger) {
+            _triggers += trigger;
+        }
+
+        /**
+         * Appends a retrigger character to {@link retriggers}.
+         */
+        public void add_retrigger (string trigger) {
+            _retriggers += trigger;
         }
 
         public SignatureHelpOptions.from_variant (Variant variant) throws DeserializeError {
@@ -256,12 +316,27 @@ namespace Lsp {
         /**
          * More trigger characters.
          */
-        public string[]? more_triggers { get; set; }
+        private string[]? _more_triggers;
+        public string[]? more_triggers {
+            get {
+                return _more_triggers;
+            }
+            set {
+                _more_triggers = value;
+            }
+        }
 
         public DocumentOnTypeFormattingOptions (string first_trigger,
                                                 string[]? more_triggers = null) {
             this.first_trigger = first_trigger;
             this.more_triggers = more_triggers;
+        }
+
+        /**
+         * Appends a trigger character to {@link more_triggers}.
+         */
+        public void add_trigger (string trigger) {
+            _more_triggers += trigger;
         }
 
         public DocumentOnTypeFormattingOptions.from_variant (

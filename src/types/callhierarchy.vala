@@ -180,7 +180,22 @@ namespace Lsp {
         /**
          * The ranges at which the calls appear.
          */
-        public Range[] from_ranges { get; set; }
+        private Range[] _from_ranges = {};
+        public Range[] from_ranges {
+            get {
+                return _from_ranges;
+            }
+            set {
+                _from_ranges = value;
+            }
+        }
+
+        /**
+         * Appends a range to {@link from_ranges}.
+         */
+        public void add_from_range (Range range) {
+            _from_ranges += range;
+        }
 
         public CallHierarchyIncomingCall (CallHierarchyItem from, Range[] from_ranges) {
             this.from = from;
@@ -241,7 +256,22 @@ namespace Lsp {
         /**
          * The ranges at which the calls appear.
          */
-        public Range[] from_ranges { get; set; }
+        private Range[] _from_ranges = {};
+        public Range[] from_ranges {
+            get {
+                return _from_ranges;
+            }
+            set {
+                _from_ranges = value;
+            }
+        }
+
+        /**
+         * Appends a range to {@link from_ranges}.
+         */
+        public void add_from_range (Range range) {
+            _from_ranges += range;
+        }
 
         public CallHierarchyOutgoingCall (CallHierarchyItem to, Range[] from_ranges) {
             this.to = to;

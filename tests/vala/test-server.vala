@@ -203,7 +203,7 @@ private class TestServer : Lsp.Server {
         record ("shutdown-finish");
     }
 
-    public override void exit () {
+    protected override void exit () {
         record ("exit");
     }
 }

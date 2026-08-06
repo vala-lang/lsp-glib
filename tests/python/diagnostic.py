@@ -57,7 +57,7 @@ class DiagnosticTest(unittest.TestCase):
             related_location,
             "related message",
         )
-        original.set_related_information([related])
+        original.add_related_information(related)
         original.set_data(GLib.Variant("s", "opaque payload"))
 
         decoded = Lsp.Diagnostic.from_variant(original.to_variant())

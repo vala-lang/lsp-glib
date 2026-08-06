@@ -156,7 +156,22 @@ namespace Lsp {
          *
          * @since 3.6.0
          */
-        public WorkspaceFolder[]? workspaces { get; set; }
+        private WorkspaceFolder[]? _workspaces;
+        public WorkspaceFolder[]? workspaces {
+            get {
+                return _workspaces;
+            }
+            set {
+                _workspaces = value;
+            }
+        }
+
+        /**
+         * Appends a workspace folder to {@link workspaces}.
+         */
+        public void add_workspace (WorkspaceFolder workspace) {
+            _workspaces += workspace;
+        }
 
         /**
          * User provided initialization options.

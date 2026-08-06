@@ -199,7 +199,22 @@ namespace Lsp {
          * the error state of the resource. The primary parameter
          * to compute code actions is the provided range.
          */
-        public Diagnostic[] diagnostics { get; set; default = {}; }
+        private Diagnostic[] _diagnostics = {};
+        public Diagnostic[] diagnostics {
+            get {
+                return _diagnostics;
+            }
+            set {
+                _diagnostics = value;
+            }
+        }
+
+        /**
+         * Appends a diagnostic to {@link diagnostics}.
+         */
+        public void add_diagnostic (Diagnostic diagnostic) {
+            _diagnostics += diagnostic;
+        }
 
         /**
          * Requested kind of actions to return.
@@ -207,7 +222,22 @@ namespace Lsp {
          * Actions not of this kind are filtered out by the client before being
          * shown. So servers can omit computing them.
          */
-        public CodeActionKind[]? only { get; set; }
+        private CodeActionKind[]? _only;
+        public CodeActionKind[]? only {
+            get {
+                return _only;
+            }
+            set {
+                _only = value;
+            }
+        }
+
+        /**
+         * Appends an action kind to {@link only}.
+         */
+        public void add_kind (CodeActionKind kind) {
+            _only += kind;
+        }
 
         /**
          * The reason why code actions were requested.
@@ -333,7 +363,22 @@ namespace Lsp {
         /**
          * The diagnostics that this code action resolves.
          */
-        public Diagnostic[]? diagnostics { get; set; }
+        private Diagnostic[]? _diagnostics;
+        public Diagnostic[]? diagnostics {
+            get {
+                return _diagnostics;
+            }
+            set {
+                _diagnostics = value;
+            }
+        }
+
+        /**
+         * Appends a diagnostic to {@link diagnostics}.
+         */
+        public void add_diagnostic (Diagnostic diagnostic) {
+            _diagnostics += diagnostic;
+        }
 
         /**
          * The workspace edit this code action performs.

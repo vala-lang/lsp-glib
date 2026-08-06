@@ -112,8 +112,9 @@ test_workspace_edit_round_trip (void)
   lsp_text_document_identifier_init (&document, document_uri, 9);
   text_change = lsp_text_document_edit_new (
       &document,
-      edits,
-      G_N_ELEMENTS (edits));
+      NULL,
+      0);
+  lsp_text_document_edit_add_edit (text_change, &edits[0]);
   create = lsp_create_file_new_with_options (
       create_uri,
       LSP_CREATE_FILE_OPTIONS_OVERWRITE |

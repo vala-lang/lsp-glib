@@ -14,14 +14,20 @@ private Uri parse_uri (string value) {
 }
 
 private ServerCaps make_server_capabilities () {
-    var completion = new CompletionOptions (
-        true,
-        { ".", ":" }) {
-        commit_triggers = { ";", ")" }
-    };
-    var signature_help = new SignatureHelpOptions ({ "(", "," }) {
-        retriggers = { ")" }
-    };
+    var completion = new CompletionOptions (true);
+    completion.add_trigger (".");
+    completion.add_trigger (":");
+    completion.add_commit_trigger (";");
+    completion.add_commit_trigger (")");
+
+    var signature_help = new SignatureHelpOptions ();
+    signature_help.add_trigger ("(");
+    signature_help.add_trigger (",");
+    signature_help.add_retrigger (")");
+
+    var on_type_formatting = new DocumentOnTypeFormattingOptions ("}");
+    on_type_formatting.add_trigger (";");
+    on_type_formatting.add_trigger ("\n");
 
     return new ServerCaps () {
         text_document_sync = TextDocumentSyncKind.INCREMENTAL,
@@ -40,8 +46,7 @@ private ServerCaps make_server_capabilities () {
         document_link = DocumentLinkOptions (true),
         document_formatting = true,
         document_range_formatting = true,
-        document_on_type_formatting =
-            new DocumentOnTypeFormattingOptions ("}", { ";", "\n" }),
+        document_on_type_formatting = on_type_formatting,
         rename = RenameOptions (true),
         call_hierarchy = CallHierarchyOptions (),
         inlay_hint = InlayHintOptions (true),
@@ -98,14 +103,6 @@ private void test_server_capabilities_round_trip () {
 
 private void test_initialize_params_round_trip () {
     try {
-        WorkspaceFolder[] workspaces = {
-            new WorkspaceFolder (
-                parse_uri ("file:///workspace"),
-                "primary"),
-            new WorkspaceFolder (
-                parse_uri ("file:///dependencies"),
-                "dependencies")
-        };
         var original = new InitializeParams (1234) {
             client_info = new ClientInfo ("Test Editor", "1.2.3"),
             locale = "en-US",
@@ -113,9 +110,14 @@ private void test_initialize_params_round_trip () {
             root_uri = parse_uri ("file:///workspace"),
             capabilities = new ClientCaps (),
             trace = TraceValue.MESSAGES,
-            workspaces = workspaces,
             initialization_options = new Variant.string ("test-options")
         };
+        original.add_workspace (new WorkspaceFolder (
+            parse_uri ("file:///workspace"),
+            "primary"));
+        original.add_workspace (new WorkspaceFolder (
+            parse_uri ("file:///dependencies"),
+            "dependencies"));
 
         var decoded = new InitializeParams.from_variant (
             original.to_variant ());

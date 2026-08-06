@@ -42,11 +42,13 @@ private void test_signature_help () {
             documentation = new MarkupContent (
                 MarkupKind.MARKDOWN,
                 "Prints a **value**."),
-            parameters = { named_parameter, offset_parameter },
             active_parameter = 1
         };
-        SignatureInformation[] signatures = { signature };
-        var help = new SignatureHelp (signatures, 0, 1);
+        signature.add_parameter (named_parameter);
+        signature.add_parameter (offset_parameter);
+
+        var help = new SignatureHelp ({}, 0, 1);
+        help.add_signature (signature);
 
         var decoded = new SignatureHelp.from_variant (
             help.to_variant ());
@@ -85,16 +87,10 @@ private void test_inlay_hint () {
             location = location,
             command = new Command ("Open type", "vala.openType")
         };
-        InlayHintLabelPart[] parts = { part };
-        var hint = new InlayHint.with_label_parts (
+        var hint = new InlayHint (
             Position (2, 9),
-            parts,
+            "temporary",
             InlayHintKind.TYPE) {
-            text_edits = {
-                TextEdit (
-                    make_range (2, 9, 2, 9),
-                    ": string")
-            },
             tooltip = new MarkupContent (
                 MarkupKind.PLAINTEXT,
                 "Inferred type"),
@@ -102,6 +98,10 @@ private void test_inlay_hint () {
                 InlayHintPadding.RIGHT,
             data = new Variant.string ("hint-token")
         };
+        hint.add_label_part (part);
+        hint.add_text_edit (TextEdit (
+            make_range (2, 9, 2, 9),
+            ": string"));
 
         var decoded = new InlayHint.from_variant (
             hint.to_variant ());
@@ -169,13 +169,11 @@ private Diagnostic make_diagnostic () {
 private void test_code_action_context () {
     try {
         var context = new CodeActionContext () {
-            diagnostics = { make_diagnostic () },
-            only = {
-                CodeActionKind.QUICK_FIX,
-                CodeActionKind.REFACTOR_REWRITE
-            },
             trigger = CodeActionTriggerKind.AUTOMATIC
         };
+        context.add_diagnostic (make_diagnostic ());
+        context.add_kind (CodeActionKind.QUICK_FIX);
+        context.add_kind (CodeActionKind.REFACTOR_REWRITE);
         var decoded = new CodeActionContext.from_variant (
             context.to_variant ());
         assert (decoded.diagnostics.length == 1);
@@ -212,13 +210,13 @@ private void test_code_action_union () {
             kind = CodeActionKind.QUICK_FIX,
             preferred = true,
             disabled_reason = "project is read-only",
-            diagnostics = { make_diagnostic () },
             edit = edit,
             command = new Command (
                 "Refresh",
                 "vala.refresh"),
             data = new Variant.string ("action-token")
         };
+        original.add_diagnostic (make_diagnostic ());
         var encoded = original.to_variant ();
         assert (
             encoded.lookup_value (

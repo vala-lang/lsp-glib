@@ -53,15 +53,11 @@ private void test_completion_item_round_trip () {
         var primary_edit = TextEdit (
             Range (Position (3, 4), Position (3, 7)),
             "print(${1:value})");
-        TextEdit[] additional_edits = {
-            TextEdit (
-                Range (Position (0, 0), Position (0, 0)),
-                "using GLib;\n")
-        };
-        Variant[] command_arguments = {
-            new Variant.string ("main.vala"),
-            new Variant.int64 (3)
-        };
+        var command = new Command (
+            "Show documentation",
+            "vala.showDocumentation");
+        command.add_argument (new Variant.string ("main.vala"));
+        command.add_argument (new Variant.int64 (3));
 
         var original = new CompletionItem (
             "print",
@@ -82,14 +78,14 @@ private void test_completion_item_round_trip () {
             insert_text_format = InsertTextFormat.SNIPPET,
             insert_text_mode = InsertTextMode.ADJUST_INDENTATION,
             text_edit = primary_edit,
-            additional_text_edits = additional_edits,
-            commit_chars = { ";", "(" },
-            command = new Command (
-                "Show documentation",
-                "vala.showDocumentation",
-                command_arguments),
+            command = command,
             data = new Variant.string ("completion-token")
         };
+        original.add_additional_text_edit (TextEdit (
+            Range (Position (0, 0), Position (0, 0)),
+            "using GLib;\n"));
+        original.add_commit_char (";");
+        original.add_commit_char ("(");
 
         var encoded = original.to_variant ();
         var documentation = encoded.lookup_value (
@@ -157,8 +153,8 @@ private void test_completion_list_round_trip () {
         var item = new CompletionItem (
             "result",
             CompletionItemKind.VARIABLE);
-        CompletionItem[] items = { item };
-        var original = new CompletionList (true, items);
+        var original = new CompletionList (true, {});
+        original.add_item (item);
         var decoded = new CompletionList.from_variant (
             original.to_variant ());
 

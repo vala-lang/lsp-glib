@@ -8,8 +8,10 @@ using Lsp;
 
 private class CancellationServer : Lsp.Server {
     public signal void request_waiting ();
+    public signal void request_finished ();
 
     public bool handler_called { get; private set; }
+    public bool handler_cancelled { get; private set; }
 
     public CancellationServer (MainLoop loop) {
         base (loop);
@@ -59,6 +61,8 @@ private class CancellationServer : Lsp.Server {
         handler_called = true;
         request_waiting ();
         yield wait_until_cancelled (client.cancellable);
+        handler_cancelled = client.cancellable.is_cancelled ();
+        request_finished ();
         // Returning normally after cancellation must not let a stale success
         // response escape. Lsp.Server checks again before replying.
         return null;
@@ -134,9 +138,65 @@ private void run_cancellation_case () {
 
     assert (!timed_out);
     assert (server.handler_called);
+    assert (server.handler_cancelled);
+}
+
+private async void run_disconnected_request (Jsonrpc.Client client) {
+    try {
+        Variant? result;
+        yield client.call_async (
+            "workspace/symbol",
+            workspace_symbol_params (),
+            null,
+            out result);
+        assert_not_reached ();
+    } catch (Error e) {
+        // Closing the transport may surface any of several I/O errors to the
+        // caller. The server-side cancellable is the behavior under test.
+    }
+}
+
+private void run_disconnect_case () {
+    IOStream server_connection;
+    IOStream client_connection;
+    create_test_stream_pair (out server_connection, out client_connection);
+
+    var loop = new MainLoop ();
+    var server = new CancellationServer (loop);
+    var client = new Jsonrpc.Client (client_connection);
+
+    server.accept_io_stream (server_connection);
+    server.request_waiting.connect (() => {
+        client.close_async.begin (null, (object, result) => {
+            try {
+                client.close_async.end (result);
+            } catch (Error e) {
+                error ("failed to close JSON-RPC client: %s", e.message);
+            }
+        });
+    });
+    server.request_finished.connect (loop.quit);
+
+    run_disconnected_request.begin (client);
+
+    bool timed_out = false;
+    uint timeout_id = Timeout.add_seconds (5, () => {
+        timed_out = true;
+        loop.quit ();
+        return Source.REMOVE;
+    });
+
+    loop.run ();
+    if (!timed_out)
+        Source.remove (timeout_id);
+
+    assert (!timed_out);
+    assert (server.handler_called);
+    assert (server.handler_cancelled);
 }
 
 private int main (string[] args) {
     run_cancellation_case ();
+    run_disconnect_case ();
     return 0;
 }

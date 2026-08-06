@@ -157,7 +157,22 @@ namespace Lsp {
         /**
          * Children of this symbol, e.g. properties of a class.
          */
-        public DocumentSymbol[] children { get; set; }
+        private DocumentSymbol[] _children = {};
+        public DocumentSymbol[] children {
+            get {
+                return _children;
+            }
+            set {
+                _children = value;
+            }
+        }
+
+        /**
+         * Appends a symbol to {@link children}.
+         */
+        public void add_child (DocumentSymbol child) {
+            _children += child;
+        }
 
         public DocumentSymbol (string name, SymbolKind kind, Range range, Range selection_range,
                                string? detail = null, SymbolTag tags = SymbolTag.UNSET) {

@@ -35,8 +35,6 @@ static void
 test_signature_help_round_trip (void)
 {
   guint active_parameter = 1;
-  LspParameterInformation *parameters[2];
-  LspSignatureInformation *signatures[1];
   gint signature_count;
   gint parameter_count;
   g_autoptr (GError) error = NULL;
@@ -65,24 +63,15 @@ test_signature_help_round_trip (void)
   lsp_parameter_information_set_documentation (
       offset_parameter,
       markdown_documentation);
-  parameters[0] = named_parameter;
-  parameters[1] = offset_parameter;
-
   signature = lsp_signature_information_new (
       "print_value(value, format)");
-  lsp_signature_information_set_parameters (
-      signature,
-      parameters,
-      G_N_ELEMENTS (parameters));
+  lsp_signature_information_add_parameter (signature, named_parameter);
+  lsp_signature_information_add_parameter (signature, offset_parameter);
   lsp_signature_information_set_active_parameter (
       signature,
       &active_parameter);
-  signatures[0] = signature;
-  original = lsp_signature_help_new (
-      signatures,
-      G_N_ELEMENTS (signatures),
-      0,
-      1);
+  original = lsp_signature_help_new (NULL, 0, 0, 1);
+  lsp_signature_help_add_signature (original, signature);
 
   wire =
       lsp_signature_help_to_variant (original);
@@ -127,7 +116,6 @@ test_symbols_round_trip (void)
   LspRange parent_selection = { 0 };
   LspRange child_range = { 0 };
   LspRange child_selection = { 0 };
-  LspDocumentSymbol *children[1];
   gint child_count;
   g_autoptr (GError) error = NULL;
   g_autoptr (GVariant) wire = NULL;
@@ -160,11 +148,7 @@ test_symbols_round_trip (void)
       &parent_selection,
       "class Example",
       LSP_SYMBOL_TAG_UNSET);
-  children[0] = child;
-  lsp_document_symbol_set_children (
-      parent,
-      children,
-      G_N_ELEMENTS (children));
+  lsp_document_symbol_add_child (parent, child);
 
   wire =
       lsp_document_symbol_to_variant (parent);
@@ -217,9 +201,11 @@ test_inlay_hint_round_trip (void)
 {
   LspPosition position = { 0 };
   LspRange location_range = { 0 };
+  LspRange edit_range = { 0 };
   LspLocation location = { 0 };
-  LspInlayHintLabelPart *parts[1];
+  g_auto (LspTextEdit) text_edit = { 0 };
   gint part_count;
+  gint edit_count;
   g_autoptr (GError) error = NULL;
   g_autoptr (GVariant) wire = NULL;
   g_autoptr (GUri) uri = parse_uri (
@@ -232,6 +218,7 @@ test_inlay_hint_round_trip (void)
   g_autoptr (LspInlayHint) text_hint = NULL;
   g_autoptr (LspInlayHint) decoded_text = NULL;
   LspInlayHintLabelPart **decoded_parts;
+  LspTextEdit *decoded_edits;
 
   lsp_position_init (&position, 2, 9);
   make_range (&location_range, 2, 4, 2, 9);
@@ -244,12 +231,14 @@ test_inlay_hint_round_trip (void)
   lsp_inlay_hint_label_part_set_tooltip (part, tooltip);
   lsp_inlay_hint_label_part_set_location (part, &location);
   lsp_inlay_hint_label_part_set_command (part, command);
-  parts[0] = part;
-  original = lsp_inlay_hint_new_with_label_parts (
+  original = lsp_inlay_hint_new (
       &position,
-      parts,
-      G_N_ELEMENTS (parts),
+      "temporary",
       LSP_INLAY_HINT_KIND_TYPE);
+  lsp_inlay_hint_add_label_part (original, part);
+  make_range (&edit_range, 2, 9, 2, 9);
+  lsp_text_edit_init (&text_edit, &edit_range, ": string", NULL);
+  lsp_inlay_hint_add_text_edit (original, &text_edit);
   lsp_inlay_hint_set_padding (
       original,
       LSP_INLAY_HINT_PADDING_LEFT |
@@ -278,6 +267,14 @@ test_inlay_hint_round_trip (void)
               decoded_parts[0])),
       ==,
       "vala.openType");
+  decoded_edits = lsp_inlay_hint_get_text_edits (
+      decoded,
+      &edit_count);
+  g_assert_cmpint (edit_count, ==, 1);
+  g_assert_cmpstr (
+      lsp_text_edit_get_new_text (&decoded_edits[0]),
+      ==,
+      ": string");
   g_assert_true (
       LSP_INLAY_HINT_PADDING_LEFT &
       lsp_inlay_hint_get_padding (decoded));
@@ -306,7 +303,6 @@ static void
 test_code_action_union_round_trip (void)
 {
   LspRange diagnostic_range = { 0 };
-  LspDiagnostic *diagnostics[1];
   g_autoptr (GError) error = NULL;
   g_autoptr (GVariant) wire = NULL;
   g_autoptr (LspDiagnostic) diagnostic = NULL;
@@ -321,7 +317,6 @@ test_code_action_union_round_trip (void)
   lsp_diagnostic_set_severity (
       diagnostic,
       LSP_DIAGNOSTIC_SEVERITY_WARNING);
-  diagnostics[0] = diagnostic;
   command = lsp_command_new ("Refresh", "vala.refresh", NULL, 0);
   original = lsp_code_action_new ("Replace deprecated call");
   lsp_code_action_set_kind (
@@ -331,10 +326,7 @@ test_code_action_union_round_trip (void)
   lsp_code_action_set_disabled_reason (
       original,
       "project is read-only");
-  lsp_code_action_set_diagnostics (
-      original,
-      diagnostics,
-      G_N_ELEMENTS (diagnostics));
+  lsp_code_action_add_diagnostic (original, diagnostic);
   lsp_code_action_set_command (original, command);
   lsp_code_action_set_data (
       original,

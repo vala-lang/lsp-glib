@@ -54,12 +54,12 @@ private void test_change_annotation_round_trip () {
 
 private void test_text_document_edit_round_trip () {
     try {
-        TextEdit[] edits = { make_text_edit () };
         var original = new TextDocumentEdit (
             TextDocumentIdentifier (
                 parse_uri ("file:///workspace/main.vala"),
                 9),
-            edits);
+            {});
+        original.add_edit (make_text_edit ());
         var encoded = original.to_variant ();
 
         assert (encoded.lookup_value ("kind", null) == null);
@@ -133,12 +133,12 @@ private void test_resource_operations_round_trip () {
 
 private void test_workspace_edit_round_trip () {
     try {
-        TextEdit[] edits = { make_text_edit () };
         var text_document_edit = new TextDocumentEdit (
             TextDocumentIdentifier (
                 parse_uri ("file:///workspace/main.vala"),
                 9),
-            edits);
+            {});
+        text_document_edit.add_edit (make_text_edit ());
         var create = new CreateFile () {
             uri = parse_uri ("file:///workspace/new.vala"),
             options = CreateFile.Options.OVERWRITE,

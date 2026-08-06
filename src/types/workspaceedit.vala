@@ -306,7 +306,15 @@ namespace Lsp {
          *
          * This corresponds to the `documentChanges` property in the protocol.
          */
-        public ResourceOperation[] document_changes { get; private set; default = {}; }
+        private ResourceOperation[] _document_changes = {};
+        public ResourceOperation[] document_changes {
+            get {
+                return _document_changes;
+            }
+            private set {
+                _document_changes = value;
+            }
+        }
 
         /**
          * A map of change annotations that can be referenced in
@@ -338,11 +346,7 @@ namespace Lsp {
          * Appends a typed document or resource change.
          */
         public void add_document_change (ResourceOperation change) {
-            ResourceOperation[] changes = {};
-            foreach (unowned var existing_change in document_changes)
-                changes += existing_change;
-            changes += change;
-            document_changes = changes;
+            _document_changes += change;
         }
 
         /**

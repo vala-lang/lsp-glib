@@ -32,17 +32,14 @@ private void test_document_symbol () {
             make_range (2, 4, 4, 5),
             make_range (2, 9, 2, 15),
             "void method ()",
-            SymbolTag.DEPRECATED) {
-            children = {}
-        };
+            SymbolTag.DEPRECATED);
         var parent = new DocumentSymbol (
             "Example",
             SymbolKind.CLASS,
             make_range (0, 0, 6, 1),
             make_range (0, 6, 0, 13),
-            "class Example") {
-            children = { child }
-        };
+            "class Example");
+        parent.add_child (child);
 
         var decoded = new DocumentSymbol.from_variant (
             parent.to_variant ());
@@ -123,14 +120,11 @@ private void test_call_hierarchy () {
     try {
         var caller = make_call_item ("caller", 1);
         var callee = make_call_item ("callee", 8);
-        Range[] call_ranges = {
-            make_range (3, 4, 3, 10),
-            make_range (5, 4, 5, 10)
-        };
-
         var incoming = new CallHierarchyIncomingCall (
             caller,
-            call_ranges);
+            {});
+        incoming.add_from_range (make_range (3, 4, 3, 10));
+        incoming.add_from_range (make_range (5, 4, 5, 10));
         var decoded_incoming =
             new CallHierarchyIncomingCall.from_variant (
                 incoming.to_variant ());
@@ -143,7 +137,9 @@ private void test_call_hierarchy () {
 
         var outgoing = new CallHierarchyOutgoingCall (
             callee,
-            call_ranges);
+            {});
+        outgoing.add_from_range (make_range (3, 4, 3, 10));
+        outgoing.add_from_range (make_range (5, 4, 5, 10));
         var decoded_outgoing =
             new CallHierarchyOutgoingCall.from_variant (
                 outgoing.to_variant ());

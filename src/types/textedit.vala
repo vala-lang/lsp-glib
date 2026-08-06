@@ -208,7 +208,22 @@ namespace Lsp {
          * Support for annotated text edits is guarded by the client capability
          * `workspace.workspaceEdit.changeAnnotationSupport`
          */
-        public TextEdit[] edits { get; set; }
+        private TextEdit[] _edits = {};
+        public TextEdit[] edits {
+            get {
+                return _edits;
+            }
+            set {
+                _edits = value;
+            }
+        }
+
+        /**
+         * Appends an edit to {@link edits}.
+         */
+        public void add_edit (TextEdit edit) {
+            _edits += edit;
+        }
 
         public TextDocumentEdit (TextDocumentIdentifier text_document, TextEdit[] edits) {
             this.text_document = text_document;

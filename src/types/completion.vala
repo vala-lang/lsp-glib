@@ -335,7 +335,22 @@ namespace Lsp {
         /**
          * The completion items.
          */
-        public CompletionItem[] items { get; set; default = {}; }
+        private CompletionItem[] _items = {};
+        public CompletionItem[] items {
+            get {
+                return _items;
+            }
+            set {
+                _items = value;
+            }
+        }
+
+        /**
+         * Appends an item to {@link items}.
+         */
+        public void add_item (CompletionItem item) {
+            _items += item;
+        }
 
         public CompletionList (bool is_incomplete, (unowned CompletionItem)[] items) {
             this.is_incomplete = is_incomplete;
@@ -532,7 +547,22 @@ namespace Lsp {
          * current cursor position (for example adding an import statement at the
          * top of the file if the completion item will insert an unqualified type).
          */
-        public TextEdit[]? additional_text_edits { get; set; }
+        private TextEdit[]? _additional_text_edits;
+        public TextEdit[]? additional_text_edits {
+            get {
+                return _additional_text_edits;
+            }
+            set {
+                _additional_text_edits = value;
+            }
+        }
+
+        /**
+         * Appends an edit to {@link additional_text_edits}.
+         */
+        public void add_additional_text_edit (TextEdit edit) {
+            _additional_text_edits += edit;
+        }
 
         /**
          * An optional set of characters that when pressed while this completion is
@@ -540,7 +570,22 @@ namespace Lsp {
          * commit characters should have `length=1` and that superfluous characters
          * will be ignored.
          */
-        public string[]? commit_chars { get; set; }
+        private string[]? _commit_chars;
+        public string[]? commit_chars {
+            get {
+                return _commit_chars;
+            }
+            set {
+                _commit_chars = value;
+            }
+        }
+
+        /**
+         * Appends a character to {@link commit_chars}.
+         */
+        public void add_commit_char (string character) {
+            _commit_chars += character;
+        }
 
         /**
          * An optional command that is executed *after* inserting this completion.

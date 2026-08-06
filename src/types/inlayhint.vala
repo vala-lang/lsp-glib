@@ -184,6 +184,14 @@ namespace Lsp {
         }
 
         /**
+         * Appends a label part to {@link label_parts}.
+         */
+        public void add_label_part (InlayHintLabelPart part) {
+            _label_parts += part;
+            _label = null;
+        }
+
+        /**
          * The kind of this hint.
          */
         public InlayHintKind kind { get; set; default = TYPE; }
@@ -192,7 +200,22 @@ namespace Lsp {
          * Optional text edits to perform when this inlay hint is
          * accepted.
          */
-        public TextEdit[]? text_edits { get; set; }
+        private TextEdit[]? _text_edits;
+        public TextEdit[]? text_edits {
+            get {
+                return _text_edits;
+            }
+            set {
+                _text_edits = value;
+            }
+        }
+
+        /**
+         * Appends an edit to {@link text_edits}.
+         */
+        public void add_text_edit (TextEdit edit) {
+            _text_edits += edit;
+        }
 
         /**
          * The tooltip text when hovering over this hint.

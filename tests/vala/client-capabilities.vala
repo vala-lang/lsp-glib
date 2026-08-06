@@ -26,18 +26,17 @@ private void test_client_capabilities_round_trip () {
                 CompletionClientFlags.INSERT_REPLACE |
                 CompletionClientFlags.CONTEXT |
                 CompletionClientFlags.LABEL_DETAILS,
-            documentation_formats = {
-                MarkupKind.MARKDOWN,
-                MarkupKind.PLAINTEXT
-            },
             supported_tags = CompletionItemTag.DEPRECATED,
-            resolve_properties = { "documentation", "detail" },
             insert_text_modes = InsertTextModeFlags.AS_IS |
                 InsertTextModeFlags.ADJUST_INDENTATION,
             item_kinds = CompletionItemKindFlags.TEXT |
                 CompletionItemKindFlags.FUNCTION |
                 CompletionItemKindFlags.TYPE_PARAMETER
         };
+        completion.add_documentation_format (MarkupKind.MARKDOWN);
+        completion.add_documentation_format (MarkupKind.PLAINTEXT);
+        completion.add_resolve_property ("documentation");
+        completion.add_resolve_property ("detail");
         var workspace = WorkspaceClientCaps ();
         workspace.flags = WorkspaceClientFlags.APPLY_EDIT;
         workspace.workspace_edit = workspace_edit;

@@ -267,7 +267,6 @@ test_diagnostic_tags_and_related_information (void)
   LspRange range = { 0 };
   g_auto (LspLocation) location = { 0 };
   g_auto (LspLocation) decoded_location = { 0 };
-  LspDiagnosticRelatedInformation *related_list[1];
   LspDiagnosticRelatedInformation **decoded_related;
   gint decoded_related_count;
   g_autoptr (GError) error = NULL;
@@ -292,16 +291,12 @@ test_diagnostic_tags_and_related_information (void)
   related = lsp_diagnostic_related_information_new (
       &location,
       "related declaration");
-  related_list[0] = related;
   original = lsp_diagnostic_new ("unused declaration", &range);
   lsp_diagnostic_set_tags (
       original,
       LSP_DIAGNOSTIC_TAG_FLAGS_UNNECESSARY |
       LSP_DIAGNOSTIC_TAG_FLAGS_DEPRECATED);
-  lsp_diagnostic_set_related_information (
-      original,
-      related_list,
-      G_N_ELEMENTS (related_list));
+  lsp_diagnostic_add_related_information (original, related);
 
   wire = lsp_diagnostic_to_variant (original);
   tags = g_variant_lookup_value (wire, "tags", G_VARIANT_TYPE_ARRAY);

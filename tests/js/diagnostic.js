@@ -39,7 +39,7 @@ const related = Lsp.DiagnosticRelatedInformation.new(
     relatedLocation,
     'related message',
 );
-diagnostic.set_related_information([related]);
+diagnostic.add_related_information(related);
 diagnostic.set_data(new GLib.Variant('s', 'diagnostic-token'));
 
 const decoded = Lsp.Diagnostic.from_variant(diagnostic.to_variant());

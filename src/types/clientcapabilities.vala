@@ -367,7 +367,22 @@ namespace Lsp {
          * Client supports the following content formats for the documentation
          * property. The order describes the preferred format of the client.
          */
-        public MarkupKind[]? documentation_formats { get; set; }
+        private MarkupKind[]? _documentation_formats;
+        public MarkupKind[]? documentation_formats {
+            get {
+                return _documentation_formats;
+            }
+            set {
+                _documentation_formats = value;
+            }
+        }
+
+        /**
+         * Appends a content format to {@link documentation_formats}.
+         */
+        public void add_documentation_format (MarkupKind format) {
+            _documentation_formats += format;
+        }
 
         /**
          * Client supports the tag property on a completion item. Clients
@@ -390,7 +405,22 @@ namespace Lsp {
          *
          * @since 3.16.0
          */
-        public string[]? resolve_properties { get; set; }
+        private string[]? _resolve_properties;
+        public string[]? resolve_properties {
+            get {
+                return _resolve_properties;
+            }
+            set {
+                _resolve_properties = value;
+            }
+        }
+
+        /**
+         * Appends a property name to {@link resolve_properties}.
+         */
+        public void add_resolve_property (string property) {
+            _resolve_properties += property;
+        }
 
         /**
          * The client supports the `insertTextMode` property on a completion

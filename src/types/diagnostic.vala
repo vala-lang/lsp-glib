@@ -242,7 +242,22 @@ namespace Lsp {
          * within a scope collide all definitions can be marked via this
          * property.
          */
-        public DiagnosticRelatedInformation[]? related_information { get; set; }
+        private DiagnosticRelatedInformation[]? _related_information;
+        public DiagnosticRelatedInformation[]? related_information {
+            get {
+                return _related_information;
+            }
+            set {
+                _related_information = value;
+            }
+        }
+
+        /**
+         * Appends related information to {@link related_information}.
+         */
+        public void add_related_information (DiagnosticRelatedInformation information) {
+            _related_information += information;
+        }
 
         /**
          * A data entry field that is preserved between a

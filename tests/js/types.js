@@ -36,14 +36,15 @@ item.set_documentation(Lsp.MarkupContent.new(
     '**Print** a value.',
 ));
 item.set_deprecated(true);
-item.set_commit_chars([';', '(']);
+item.add_commit_char(';');
+item.add_commit_char('(');
 item.set_insert_text_format(Lsp.InsertTextFormat.SNIPPET);
 item.set_text_edit(edit);
 item.set_data(new GLib.Variant('s', 'completion-token'));
 
-const completion = Lsp.CompletionList.from_variant(
-    Lsp.CompletionList.new(true, [item]).to_variant(),
-);
+const completionList = Lsp.CompletionList.new(true, []);
+completionList.add_item(item);
+const completion = Lsp.CompletionList.from_variant(completionList.to_variant());
 const [decodedItem] = completion.get_items();
 assert(completion.get_is_incomplete(), 'completion list lost incomplete state');
 assertEqual(decodedItem.get_label(), 'print', 'completion label did not round-trip');
@@ -123,7 +124,7 @@ params.set_client_info(Lsp.ClientInfo.new('GJS Test Editor', '1.0'));
 params.set_locale('en-US');
 params.set_root_uri(rootUri);
 params.set_trace(Lsp.TraceValue.MESSAGES);
-params.set_workspaces([Lsp.WorkspaceFolder.new(rootUri, 'workspace')]);
+params.add_workspace(Lsp.WorkspaceFolder.new(rootUri, 'workspace'));
 
 const decodedParams = Lsp.InitializeParams.from_variant(params.to_variant());
 assertEqual(decodedParams.get_client_info().get_name(), 'GJS Test Editor',

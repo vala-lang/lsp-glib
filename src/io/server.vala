@@ -52,7 +52,6 @@ public abstract class Lsp.Server : Jsonrpc.Server {
             handle_call_async.begin (client, method, id, parameters);
             return !exited;
         });
-        client_closed.connect (cancel_client_requests);
     }
 
     /**
@@ -669,6 +668,10 @@ public abstract class Lsp.Server : Jsonrpc.Server {
         active_requests.remove (client);
     }
 
+    protected override void client_closed (Jsonrpc.Client client) {
+        cancel_client_requests (client);
+    }
+
     private void cancel_all_requests () {
         foreach (unowned var requests in active_requests.get_values ()) {
             foreach (unowned var request_cancellable in requests.get_values ())
@@ -1211,7 +1214,7 @@ public abstract class Lsp.Server : Jsonrpc.Server {
      */
     protected abstract async void shutdown_async (Client client) throws Error;
 
-    public virtual void exit () {
+    protected virtual void exit () {
         if (loop != null)
             loop.quit ();
     }

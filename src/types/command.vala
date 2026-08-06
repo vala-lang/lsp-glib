@@ -71,7 +71,22 @@ namespace Lsp {
         /**
          * Arguments that the command handler should be invoked with.
          */
-        public Variant[]? arguments { get; set; }
+        private Variant[]? _arguments;
+        public Variant[]? arguments {
+            get {
+                return _arguments;
+            }
+            set {
+                _arguments = value;
+            }
+        }
+
+        /**
+         * Appends an argument to {@link arguments}.
+         */
+        public void add_argument (Variant argument) {
+            _arguments += argument;
+        }
 
         /**
          * Creates a new {@link Lsp.Command}

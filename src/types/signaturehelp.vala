@@ -173,7 +173,22 @@ namespace Lsp {
         /**
          * The parameters of this signature.
          */
-        public ParameterInformation[]? parameters { get; set; }
+        private ParameterInformation[]? _parameters;
+        public ParameterInformation[]? parameters {
+            get {
+                return _parameters;
+            }
+            set {
+                _parameters = value;
+            }
+        }
+
+        /**
+         * Appends a parameter to {@link parameters}.
+         */
+        public void add_parameter (ParameterInformation parameter) {
+            _parameters += parameter;
+        }
 
         /**
          * The index of the active parameter.
@@ -269,7 +284,22 @@ namespace Lsp {
         /**
          * One or more signatures.
          */
-        public SignatureInformation[] signatures { get; set; default = {}; }
+        private SignatureInformation[] _signatures = {};
+        public SignatureInformation[] signatures {
+            get {
+                return _signatures;
+            }
+            set {
+                _signatures = value;
+            }
+        }
+
+        /**
+         * Appends a signature to {@link signatures}.
+         */
+        public void add_signature (SignatureInformation signature) {
+            _signatures += signature;
+        }
 
         /**
          * The active signature. If omitted or the value lies outside

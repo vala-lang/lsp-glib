@@ -24,9 +24,9 @@ private void test_round_trip () {
             source = "vala",
             tags = DiagnosticTagFlags.UNNECESSARY |
                 DiagnosticTagFlags.DEPRECATED,
-            related_information = { related },
             data = new Variant.string ("opaque payload")
         };
+        original.add_related_information (related);
 
         var decoded = new Diagnostic.from_variant (
             original.to_variant ());

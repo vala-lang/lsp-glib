@@ -51,9 +51,7 @@ test_completion_item_round_trip (void)
   LspRange primary_range = { 0 };
   LspRange additional_range = { 0 };
   LspTextEdit *primary_edit = g_new0 (LspTextEdit, 1);
-  LspTextEdit additional_edits[1] = { 0 };
-  GVariant *arguments[2];
-  gchar *commit_chars[] = { ";", "(" };
+  g_auto (LspTextEdit) additional_edit = { 0 };
   gint additional_count;
   gint commit_count;
   g_autoptr (GError) error = NULL;
@@ -63,6 +61,8 @@ test_completion_item_round_trip (void)
   g_autoptr (LspCompletionItemLabelDetails) label_details = NULL;
   g_autoptr (LspMarkupContent) documentation = NULL;
   g_autoptr (LspCommand) command = NULL;
+  g_autoptr (GVariant) filename_argument = NULL;
+  g_autoptr (GVariant) line_argument = NULL;
   LspTextEdit *decoded_edits;
   gchar **decoded_commit_chars;
 
@@ -74,13 +74,14 @@ test_completion_item_round_trip (void)
       "print(${1:value})",
       NULL);
   lsp_text_edit_init (
-      &additional_edits[0],
+      &additional_edit,
       &additional_range,
       "using GLib;\n",
       NULL);
 
-  arguments[0] = g_variant_new_string ("main.vala");
-  arguments[1] = g_variant_new_int64 (3);
+  filename_argument = g_variant_ref_sink (
+      g_variant_new_string ("main.vala"));
+  line_argument = g_variant_ref_sink (g_variant_new_int64 (3));
   label_details = lsp_completion_item_label_details_new (
       "(value)",
       "GLib");
@@ -90,8 +91,10 @@ test_completion_item_round_trip (void)
   command = lsp_command_new (
       "Show documentation",
       "vala.showDocumentation",
-      arguments,
-      G_N_ELEMENTS (arguments));
+      NULL,
+      0);
+  lsp_command_add_argument (command, filename_argument);
+  lsp_command_add_argument (command, line_argument);
 
   original = lsp_completion_item_new (
       "print",
@@ -117,14 +120,11 @@ test_completion_item_round_trip (void)
       LSP_INSERT_TEXT_MODE_ADJUST_INDENTATION);
   /* The owned text_edit property takes this allocation. */
   lsp_completion_item_set_text_edit (original, primary_edit);
-  lsp_completion_item_set_additional_text_edits (
+  lsp_completion_item_add_additional_text_edit (
       original,
-      additional_edits,
-      G_N_ELEMENTS (additional_edits));
-  lsp_completion_item_set_commit_chars (
-      original,
-      commit_chars,
-      G_N_ELEMENTS (commit_chars));
+      &additional_edit);
+  lsp_completion_item_add_commit_char (original, ";");
+  lsp_completion_item_add_commit_char (original, "(");
   lsp_completion_item_set_command (original, command);
   lsp_completion_item_set_data (
       original,
@@ -193,7 +193,6 @@ test_completion_item_round_trip (void)
 static void
 test_completion_list_round_trip (void)
 {
-  LspCompletionItem *items[1];
   gint item_count;
   g_autoptr (GError) error = NULL;
   g_autoptr (GVariant) wire = NULL;
@@ -205,11 +204,8 @@ test_completion_list_round_trip (void)
   item = lsp_completion_item_new (
       "result",
       LSP_COMPLETION_ITEM_KIND_VARIABLE);
-  items[0] = item;
-  original = lsp_completion_list_new (
-      TRUE,
-      items,
-      G_N_ELEMENTS (items));
+  original = lsp_completion_list_new (TRUE, NULL, 0);
+  lsp_completion_list_add_item (original, item);
   wire =
       lsp_completion_list_to_variant (original);
   decoded = lsp_completion_list_new_from_variant (wire, &error);
