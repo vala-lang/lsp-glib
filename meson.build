@@ -1,5 +1,5 @@
 project('lsp-glib', 'vala', 'c',
-  version: '3.18.0-alpha',
+  version: '3.18.0-alpha.1',
   license: 'LGPL-2.1-or-later')
 
 jsonrpc_glib_dep = dependency(
@@ -48,6 +48,7 @@ vala_dependencies = dependencies + jsonrpc_glib_vala_dep
 pkgconfig = import('pkgconfig')
 
 PKGCONFIG_DEPS = ['glib-2.0', 'gobject-2.0', 'gio-2.0', 'jsonrpc-glib-1.0']
+# API_VERSION names ABI-facing artifacts; project() versions library releases.
 API_VERSION = '3.0'
 vapidir = get_option('datadir') / 'vala' / 'vapi'
 

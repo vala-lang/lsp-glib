@@ -62,8 +62,11 @@ liblsp_glib = library('lsp-glib-' + API_VERSION,
 
 subdir('gir')
 
-install_data('lsp-glib.deps',
-             install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'vala', 'vapi'))
+install_data(
+  'lsp-glib.deps',
+  install_dir: vapidir,
+  rename: 'lsp-glib-' + API_VERSION + '.deps',
+)
 
 if g_ir_compiler.found() and get_option('default_library') != 'static'
   lsp_glib_typelib = custom_target('liblsp-glib-typelib',
@@ -81,7 +84,7 @@ endif
 
 pkgconfig.generate(liblsp_glib,
   subdirs: 'lsp-glib-' + API_VERSION,
-  version: API_VERSION,
+  version: meson.project_version(),
   name: 'lsp-glib',
   filebase: 'lsp-glib-' + API_VERSION,
   requires: PKGCONFIG_DEPS,
@@ -90,7 +93,8 @@ pkgconfig.generate(liblsp_glib,
 lsp_glib_dep = declare_dependency(
   link_with: liblsp_glib,
   dependencies: dependencies,
-  include_directories: [include_directories('.')]
+  include_directories: [include_directories('.')],
+  version: meson.project_version(),
 )
 
 # Generated VAPIs are source dependencies in Meson and make C-only targets look
@@ -98,7 +102,8 @@ lsp_glib_dep = declare_dependency(
 lsp_glib_vala_dep = declare_dependency(
   link_with: liblsp_glib,
   dependencies: vala_dependencies,
-  include_directories: [include_directories('.')]
+  include_directories: [include_directories('.')],
+  version: meson.project_version(),
 )
 
 meson.override_dependency('lsp-glib-' + API_VERSION, lsp_glib_dep)
