@@ -72,10 +72,9 @@ if g_ir_compiler.found() and get_option('default_library') != 'static'
   lsp_glib_typelib = custom_target('liblsp-glib-typelib',
     command: [
       g_ir_compiler,
-      '--shared-library', 'liblsp-glib-@0@.so'.format (API_VERSION),
-      '--output', '@OUTPUT@',
-      lsp_glib_gir
+      '--output', '@OUTPUT@', '@INPUT@'
     ],
+    input: lsp_glib_gir,
     output: 'Lsp-' + API_VERSION + '.typelib',
     depends: liblsp_glib,
     install: true,
@@ -105,3 +104,5 @@ lsp_glib_vala_dep = declare_dependency(
   include_directories: [include_directories('.')],
   version: meson.project_version(),
 )
+
+meson.override_dependency('lsp-glib-' + API_VERSION, lsp_glib_vala_dep)

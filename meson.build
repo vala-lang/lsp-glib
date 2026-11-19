@@ -1,5 +1,6 @@
 project('lsp-glib', 'vala', 'c',
   version: '3.18.0-alpha.1',
+  meson_version: '>=1.2.0',
   license: 'LGPL-2.1-or-later')
 
 jsonrpc_glib_dep = dependency(
